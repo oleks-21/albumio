@@ -1,0 +1,153 @@
+.album-carousel {
+  padding: 0.5rem;
+}
+
+/* Container around the image list */
+.album-images {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* Scale down images on small screens so they match menu width */
+@media (max-width: 768px) {
+  .album-images {
+    width: 20em;         /* match .menu-container */
+    max-width: 100%;     /* ensure it still shrinks further if needed */
+    margin: 0 auto;      /* keep centered */
+  }
+}
+
+/* Ensure images scale properly inside */
+.album-images .MuiImageListItem-root {
+  position: relative;
+  width: 100% !important;
+  height: 200px !important;   /* fixed height */
+  border-radius: 10px;
+  overflow: hidden;
+  background-color: #111827;  /* gray-900 backing behind letterboxed images */
+  border: 1px solid #1f2937;  /* gray-800 hairline */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.album-images img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;   /* ✅ scales entire image, no crop */
+  border-radius: 8px;
+}
+
+/* Tabs bar stays full width */
+.tabs-container {
+  width: 100%;
+}
+
+/* Menu wrapper takes full width and centers the fixed menu box */
+.menu-container {
+  display: flex;
+  justify-content: center;  /* ✅ centers horizontally */
+  align-items: center;      /* optional: vertical centering within its 150px height */
+  min-height: 175px;
+}
+
+.menu-container.top-align {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* aligns content to top */
+  align-items: center; /* or flex-start if you want left alignment */
+  width: 100%;
+}
+
+/* The inner menu box (FileSelect, CollectionDisplay, Preset) */
+.menu-box {
+  width: 20em;       /* fixed width */
+  max-width: 100%;   /* don’t overflow on small screens */
+}
+
+.react-multi-carousel-track {
+  float: left !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.carousel-item {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-right: 1rem;
+}
+.MuiImageListItem-standard{
+  width: 12em !important;
+  height:24vh !important;
+}
+/* Remove margin after last item */
+.carousel-item:last-child {
+  margin-right: 0;
+}
+
+.image-container {
+  position: relative;
+  display: inline-block;
+}
+
+.image-container img {
+  position: relative;
+  display: block;
+}
+.preview-button {
+  position: absolute !important;
+  top: 8px;
+  right: 20px;
+  z-index: 1;
+  min-width: 32px;
+  padding: 4px;
+}
+.top-right-buttons {
+  position: absolute !important;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+  min-width: 32px;
+  padding: 4px;
+}
+#slideshowButton{
+  margin-top: 3em;
+  background-image: linear-gradient(to top, #4f46e5, #6366f1);
+  background-size: 100% 100%;
+  background-position: bottom;
+  box-shadow: inset 0px 1px 0px 0px rgba(255, 255, 255, 0.16);
+  transition: background-size 0.2s ease;
+}
+#slideshowButton:hover{
+  background-image: linear-gradient(to top, #4f46e5, #6366f1);
+  background-size: 100% 150%;
+}
+.image-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  color: white;
+  font-size: 1rem;
+  text-align: center;
+  line-height: 200px;
+  cursor: pointer;
+  transition: opacity 0.3s ease;
+  border-radius: 8px;
+}
+.image-container:hover .image-overlay {
+  display: block;
+}
+#deleteButton{
+  background :rgba(255, 0, 0, 0.7);
+}
+#deleteButton:hover{
+  background :rgb(185, 0, 0);
+}

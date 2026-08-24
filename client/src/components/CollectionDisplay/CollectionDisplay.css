@@ -1,0 +1,14 @@
+.checkbox-collection {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.checkbox-collection .MuiFormControlLabel-label {
+  font-size: 0.8rem;
+}
+
+.checkbox-collection .MuiCheckbox-root {
+  transform: scale(0.8); 
+}
