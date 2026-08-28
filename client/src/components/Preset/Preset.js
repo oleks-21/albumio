@@ -1,5 +1,6 @@
+import { API_BASE } from '../../api';
 import React, { useState, useEffect } from 'react';
-import { FormControlLabel, Checkbox, MenuItem, Select, FormControl, Box, Chip, Grid } from '@mui/material';
+import { FormControlLabel, Checkbox, MenuItem, Select, FormControl, Box, Grid } from '@mui/material';
 import {
   Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
 } from '@mui/material';
@@ -25,7 +26,7 @@ export default function Preset({
 
   useEffect(() => {
     const fetchPresets = async () => {
-      const res = await fetch(`https://albumio-backend.onrender.com/api/user-presets?email=${email}`);
+      const res = await fetch(`${API_BASE}/api/user-presets?email=${email}`);
       const data = await res.json();
       if (Array.isArray(data)) {
         setPresets(data);
@@ -38,7 +39,7 @@ export default function Preset({
   }, []);
 
   const handlePresetClick = async (presetName) => {
-    const res = await fetch(`https://albumio-backend.onrender.com/api/preset-images?preset=${presetName}`);
+    const res = await fetch(`${API_BASE}/api/preset-images?preset=${presetName}`);
     const { imageIds } = await res.json();
 
     // Set the checked images in the selector
@@ -55,7 +56,7 @@ export default function Preset({
   const handleSavePreset = async () => {
     if (!presetName.trim()) return;
     try {
-      await fetch('https://albumio-backend.onrender.com/api/save-preset', {
+      await fetch(`${API_BASE}/api/save-preset`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -176,7 +177,7 @@ export default function Preset({
                     onClick={async (e) => {
                       e.stopPropagation();
                       try {
-                        await fetch('https://albumio-backend.onrender.com/api/delete-preset', {
+                        await fetch(`${API_BASE}/api/delete-preset`, {
                           method: 'DELETE',
                           headers: { 'Content-Type': 'application/json' },
                           body: JSON.stringify({ email, presetName: name }),

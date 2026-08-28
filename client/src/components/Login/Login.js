@@ -1,113 +1,182 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import Backdrop from '@mui/material/Backdrop';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
 import TextField from '@mui/material/TextField';
 import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
-import Typography from '@mui/material/Typography';
+import Alert from '@mui/material/Alert';
+import CircularProgress from '@mui/material/CircularProgress';
 import { useDispatch } from 'react-redux';
 import { login } from '../../store/store';
-import { tokens, cardSurface } from '../../theme';
+import { request } from '../../api';
+import { tokens } from '../../theme';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const Login = ({ open, register, handleClose }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // Reset form state whenever the dialog is (re)opened or the mode switches,
+  // so stale values/errors never carry over between sessions.
+  useEffect(() => {
+    if (open) {
+      setName('');
+      setEmail('');
+      setPassword('');
+      setError('');
+      setSubmitting(false);
+    }
+  }, [open, register]);
+
+  const validate = () => {
+    if (register && !name.trim()) return 'Please enter your name.';
+    if (!EMAIL_RE.test(email.trim())) return 'Please enter a valid email address.';
+    if (!password) return 'Please enter your password.';
+    if (register && password.length < 6) return 'Password must be at least 6 characters.';
+    return '';
+  };
+
   const handleLogin = async () => {
     try {
-      const response = await fetch('https://albumio-backend.onrender.com/api/login', {
+      const response = await request('/api/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email, password }),
+        body: JSON.stringify({ email, password }),
       });
-
       if (response.ok) {
         dispatch(login(email));
         handleClose();
         navigate('/album_display');
       } else {
-        const data = await response.json();
-        alert(data.message || 'Login failed');
+        const data = await response.json().catch(() => ({}));
+        setError(data.message || 'Invalid email or password.');
       }
     } catch (err) {
-      console.error('Login error:', err);
-      alert('An error occurred during login.');
+      setError(err.message || 'An error occurred during login.');
     }
   };
+
   const handleRegister = async () => {
     try {
-      const response = await fetch('https://albumio-backend.onrender.com/register', {
+      const response = await request('/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password })
-      })
+        body: JSON.stringify({ name, email, password }),
+      });
       if (response.ok) {
-        dispatch(login(name));
+        // FIX: was dispatch(login(name)) — stored the name as the email and
+        // broke every email-keyed API call for newly registered users.
+        dispatch(login(email));
         handleClose();
         navigate('/album_display');
       } else {
-        const data = await response.json();
-        alert(data.message || 'Registration failed');
+        const data = await response.json().catch(() => ({}));
+        setError(data.message || 'Registration failed. Please try again.');
       }
     } catch (err) {
-      console.error('Registration error:', err);
-      alert('An error ocurred furing registration')
+      setError(err.message || 'An error occurred during registration.');
     }
-  }
+  };
+
+  const handleSubmit = async (e) => {
+    if (e) e.preventDefault();
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+    setError('');
+    setSubmitting(true);
+    try {
+      if (register) {
+        await handleRegister();
+      } else {
+        await handleLogin();
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
-    <Backdrop
-      sx={(theme) => ({
-        zIndex: theme.zIndex.drawer + 1,
-        backgroundColor: 'rgba(3, 7, 18, 0.7)',
-        backdropFilter: 'blur(4px)'
-      })}
+    <Dialog
       open={open}
-      onClick={handleClose}
-    >
-      <Card
-        sx={{
-          ...cardSurface,
-          minWidth: 320,
-          padding: 3,
+      onClose={handleClose}
+      aria-labelledby="auth-dialog-title"
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{
+        component: 'form',
+        onSubmit: handleSubmit,
+        sx: {
           backgroundColor: tokens.gray900,
-          color: tokens.gray200
-        }}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <CardContent>
-          <Typography
-            variant="h5"
-            sx={{ mb: 2.5, textAlign: 'center', color: tokens.gray100 }}
-          >
-            {register ? 'Create your account' : 'Welcome back'}
-          </Typography>
-          {register ? (
-            <Stack spacing={2}>
-              <TextField label="Name" variant="outlined" onChange={(e) => setName(e.target.value)} />
-              <TextField label="Email" variant="outlined" onChange={(e) => setEmail(e.target.value)} />
-              <TextField label="Password" variant="outlined" type="password" onChange={(e) => setPassword(e.target.value)} />
-              <Button variant="contained" color="primary" onClick={handleRegister}>Register</Button>
-            </Stack>
-          ) : (
-            <Stack spacing={2}>
-              <TextField
-                label="Email"
-                variant="outlined"
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <TextField label="Password" variant="outlined" type="password" onChange={(e) => setPassword(e.target.value)} />
-              <Button variant="contained" color="primary" onClick={handleLogin}>Login</Button>
-            </Stack>
+          border: `1px solid ${tokens.gray800}`,
+          backgroundImage: 'none',
+        },
+      }}
+    >
+      <DialogTitle id="auth-dialog-title" sx={{ textAlign: 'center', color: tokens.gray100 }}>
+        {register ? 'Create your account' : 'Welcome back'}
+      </DialogTitle>
+      <DialogContent>
+        <Stack spacing={2} sx={{ mt: 1 }}>
+          {error && (
+            <Alert severity="error" variant="outlined" onClose={() => setError('')}>
+              {error}
+            </Alert>
           )}
-        </CardContent>
-      </Card>
-    </Backdrop>
+          {register && (
+            <TextField
+              label="Name"
+              variant="outlined"
+              value={name}
+              autoFocus
+              onChange={(e) => setName(e.target.value)}
+              disabled={submitting}
+              fullWidth
+            />
+          )}
+          <TextField
+            label="Email"
+            type="email"
+            variant="outlined"
+            value={email}
+            autoFocus={!register}
+            autoComplete="email"
+            onChange={(e) => setEmail(e.target.value)}
+            disabled={submitting}
+            fullWidth
+          />
+          <TextField
+            label="Password"
+            type="password"
+            variant="outlined"
+            value={password}
+            autoComplete={register ? 'new-password' : 'current-password'}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={submitting}
+            fullWidth
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            disabled={submitting}
+            startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : null}
+          >
+            {register ? 'Register' : 'Login'}
+          </Button>
+        </Stack>
+      </DialogContent>
+    </Dialog>
   );
 };
 

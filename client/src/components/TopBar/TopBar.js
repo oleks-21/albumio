@@ -1,3 +1,4 @@
+import { API_BASE } from '../../api';
 import React, { useEffect, useState } from 'react';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
@@ -7,7 +8,7 @@ import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
+import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../store/store';
@@ -48,7 +49,7 @@ export default function TopBar() {
   useEffect(() => {
     const fetchName = async () => {
       try {
-        const response = await fetch(`https://albumio-backend.onrender.com/api/user-name?email=${email}`);
+        const response = await fetch(`${API_BASE}/api/user-name?email=${email}`);
         const data = await response.json();
         if (response.ok) {
           setName(data.name);
@@ -122,6 +123,7 @@ export default function TopBar() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <IconButton
                 edge="start"
+                aria-label="Open navigation menu"
                 onClick={() => setDrawerOpen(true)}
                 sx={{ color: tokens.gray300 }}
               >
@@ -147,6 +149,7 @@ export default function TopBar() {
               {isMobile ? (
                 <>
                   <IconButton
+                    aria-label="Account menu"
                     onClick={(e) => setAnchorEl(e.currentTarget)}
                     sx={{ color: tokens.gray300 }}
                   >
@@ -167,17 +170,16 @@ export default function TopBar() {
                       },
                     }}
                   >
-                    {isLoggedIn ? (
-                      <>
-                        <MenuItem disabled>Hello, {name || email}</MenuItem>
-                        <MenuItem onClick={handleLogout}>Logout</MenuItem>
-                      </>
-                    ) : (
-                      <>
-                        <MenuItem onClick={handleOpen}>Login</MenuItem>
-                        <MenuItem onClick={handleOpenRegister}>Register</MenuItem>
-                      </>
-                    )}
+                    {/* Array (not Fragment) — MUI Menu requires a flat child list */}
+                    {isLoggedIn
+                      ? [
+                          <MenuItem key="hello" disabled>Hello, {name || email}</MenuItem>,
+                          <MenuItem key="logout" onClick={() => { setAnchorEl(null); handleLogout(); }}>Logout</MenuItem>,
+                        ]
+                      : [
+                          <MenuItem key="login" onClick={() => { setAnchorEl(null); handleOpen(); }}>Login</MenuItem>,
+                          <MenuItem key="register" onClick={() => { setAnchorEl(null); handleOpenRegister(); }}>Register</MenuItem>,
+                        ]}
                   </Menu>
                 </>
               ) : (
@@ -237,25 +239,23 @@ export default function TopBar() {
               fontWeight: 500,
               letterSpacing: '-0.0125em',
             },
-            '& .MuiListItem-root': {
-              cursor: 'pointer',
-              '&:hover': { backgroundColor: 'rgba(99, 102, 241, 0.08)' },
+            '& .MuiListItemButton-root:hover': {
+              backgroundColor: 'rgba(99, 102, 241, 0.08)',
             },
           }}
         >
-
           {isLoggedIn && (location.pathname === "/") ? (
-            <ListItem button onClick={() => navigate('/album_display')}>
+            <ListItemButton onClick={() => { setDrawerOpen(false); navigate('/album_display'); }}>
               <ListItemText primary="My Album" />
-            </ListItem>
+            </ListItemButton>
           ) : (
-            <ListItem button onClick={() => navigate('/')}>
+            <ListItemButton onClick={() => { setDrawerOpen(false); navigate('/'); }}>
               <ListItemText primary="Home" />
-            </ListItem>
+            </ListItemButton>
           )}
-          <ListItem button onClick={() => navigate('/about')}>
+          <ListItemButton onClick={() => { setDrawerOpen(false); navigate('/about'); }}>
             <ListItemText primary="About" />
-          </ListItem>
+          </ListItemButton>
         </List>
       </Drawer>
 

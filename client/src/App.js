@@ -10,14 +10,16 @@ import { Toolbar } from '@mui/material';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import EditImage from './components/EditImage/EditImage';
+import NotFound from './components/NotFound/NotFound';
 import darkTheme from './theme';
 
-export default function App() {
-  function ProtectedRoute({ children }) {
-    const isLoggedIn = useSelector(state => state.user.isLoggedIn);
-    return isLoggedIn ? children : <Navigate to="/" replace />;
-  }
+// Defined at module scope so it isn't recreated on every App render.
+function ProtectedRoute({ children }) {
+  const isLoggedIn = useSelector(state => state.user.isLoggedIn);
+  return isLoggedIn ? children : <Navigate to="/" replace />;
+}
 
+export default function App() {
   return (
     <div className="App">
       <ThemeProvider theme={darkTheme}>
@@ -38,6 +40,7 @@ export default function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </header>
         </Box>

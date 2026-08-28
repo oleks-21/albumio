@@ -1,3 +1,4 @@
+import { API_BASE } from '../../api';
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import FileSelect from '../FileSelect/FileSelect';
@@ -23,13 +24,10 @@ export default function Album() {
 
   const [selectedCollections, setSelectedCollections] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
-  const [activeFilterMode, setActiveFilterMode] = useState('collection');
   const [activeFilterSource, setActiveFilterSource] = useState('collection');
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
-    const mode = newValue === 2 ? 'preset' : 'collection';
-    setActiveFilterMode(mode);
   };
 
   const [manuallySelectedImageNames, setManuallySelectedImageNames] = useState([]);
@@ -48,7 +46,7 @@ export default function Album() {
 
   const fetchUserImages = async () => {
     try {
-      const response = await fetch(`https://albumio-backend.onrender.com/api/my-images?email=${email}`);
+      const response = await fetch(`${API_BASE}/api/my-images?email=${email}`);
       const files = await response.json();
       if (response.ok && Array.isArray(files)) {
         const imagePreviews = files.map((file) => ({
@@ -77,7 +75,7 @@ export default function Album() {
 
   const handleDelete = async (name) => {
     try {
-      const response = await fetch(`https://albumio-backend.onrender.com/api/delete-image`, {
+      const response = await fetch(`${API_BASE}/api/delete-image`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email }),
@@ -219,6 +217,7 @@ export default function Album() {
                       onClick={() => previewImage(img.file.name)}
                     />
                     <IconButton
+                      aria-label={`Delete ${img.file.name}`}
                       sx={{
                         position: 'absolute',
                         top: 4,

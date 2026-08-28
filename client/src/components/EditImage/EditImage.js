@@ -1,3 +1,4 @@
+import { API_BASE } from '../../api';
 import { useLocation } from "react-router-dom";
 import Card from "@mui/material/Card";
 import Box from "@mui/material/Box";
@@ -7,12 +8,11 @@ import CreateIcon from "@mui/icons-material/Create";      // ✏️ Draw
 import CropIcon from "@mui/icons-material/Crop";          // ✂️ Crop
 import ColorLensIcon from "@mui/icons-material/ColorLens"; // 🎨 Adjust
 import { useState, useRef, useEffect } from "react";
-import { Button, IconButton, Tooltip, Slider, ToggleButton, ToggleButtonGroup } from "@mui/material";
+import { Button, IconButton, Tooltip, Slider, ToggleButton, ToggleButtonGroup, Snackbar, Alert, CircularProgress } from "@mui/material";
 import AutoFixOffIcon from "@mui/icons-material/AutoFixOff"; // 🩹 Eraser
 import { useSelector } from "react-redux";
 import Input from '@mui/material/Input';
 import { useNavigate } from 'react-router-dom';
-import Grid from '@mui/material/Grid';
 
 /**
  * Brush stroke types. `dash` is a function of the current line width so the
@@ -61,6 +61,8 @@ export default function EditImage() {
 
   const [newImageName, setNewImageName] = useState(imageName || '');
   const [newCollection, setNewCollection] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
   const email = useSelector(state => state.user.email);
 
   useEffect(() => {
@@ -230,7 +232,7 @@ export default function EditImage() {
     }
 
     try {
-      const response = await fetch('https://albumio-backend.onrender.com/api/upload-image', {
+      const response = await fetch(`${API_BASE}/api/upload-image`, {
         method: 'POST',
         body: formData
       });
@@ -242,55 +244,74 @@ export default function EditImage() {
       return null;
     }
   };
+  // Promisified toBlob that surfaces the SecurityError thrown when the source
+  // image is cross-origin without CORS headers (a "tainted" canvas).
+  const canvasToBlob = (canvasEl) =>
+    new Promise((resolve, reject) => {
+      try {
+        canvasEl.toBlob(
+          (blob) => (blob ? resolve(blob) : reject(new Error('Could not export image.'))),
+          'image/png'
+        );
+      } catch (err) {
+        reject(err);
+      }
+    });
+
   const handleSave = async () => {
     const canvas = canvasRef.current;
     const imgEl = document.getElementById("editImage");
     if (!canvas || !imgEl) return;
 
-    // 1️⃣ Create a new canvas to merge image + drawings
-    const mergedCanvas = document.createElement("canvas");
-    mergedCanvas.width = canvas.width;
-    mergedCanvas.height = canvas.height;
-    const mergedCtx = mergedCanvas.getContext("2d");
+    setSaving(true);
+    setSaveError('');
+    try {
+      // 1️⃣ Merge image + drawings
+      const mergedCanvas = document.createElement("canvas");
+      mergedCanvas.width = canvas.width;
+      mergedCanvas.height = canvas.height;
+      const mergedCtx = mergedCanvas.getContext("2d");
+      mergedCtx.filter = filterString;
+      mergedCtx.drawImage(imgEl, 0, 0, canvas.width, canvas.height);
+      mergedCtx.filter = "none";
+      mergedCtx.drawImage(canvas, 0, 0);
 
-    // Draw the base image with the applied filters
-    mergedCtx.filter = filterString;
-    mergedCtx.drawImage(imgEl, 0, 0, canvas.width, canvas.height);
+      let exportCanvas = mergedCanvas;
 
-    // Draw the drawing canvas (lines, erasing, etc.)
-    mergedCtx.filter = "none";
-    mergedCtx.drawImage(canvas, 0, 0);
-
-    let exportCanvas = mergedCanvas;
-
-    // 2️⃣ If cropping, crop the merged canvas
-    if (cropRect) {
-      const cropCanvas = document.createElement("canvas");
-      cropCanvas.width = cropRect.w;
-      cropCanvas.height = cropRect.h;
-
-      const cropCtx = cropCanvas.getContext("2d");
-      cropCtx.drawImage(
-        mergedCanvas,
-        cropRect.x, cropRect.y, cropRect.w, cropRect.h,
-        0, 0, cropRect.w, cropRect.h
-      );
-
-      exportCanvas = cropCanvas;
-    }
-
-    // 3️⃣ Upload final merged/cropped image
-    exportCanvas.toBlob(async (blob) => {
-      if (blob) {
-        const result = await uploadImage(blob);
-        if (result) {
-          console.log("Upload successful:", result);
-        } else {
-          console.error("Upload failed");
-        }
+      // 2️⃣ Crop if a selection exists
+      if (cropRect) {
+        const cropCanvas = document.createElement("canvas");
+        cropCanvas.width = cropRect.w;
+        cropCanvas.height = cropRect.h;
+        const cropCtx = cropCanvas.getContext("2d");
+        cropCtx.drawImage(
+          mergedCanvas,
+          cropRect.x, cropRect.y, cropRect.w, cropRect.h,
+          0, 0, cropRect.w, cropRect.h
+        );
+        exportCanvas = cropCanvas;
       }
-    }, "image/png");
-    navigate('/album_display');
+
+      // 3️⃣ Export (may throw on a CORS-tainted canvas) then upload
+      let blob;
+      try {
+        blob = await canvasToBlob(exportCanvas);
+      } catch {
+        throw new Error(
+          'This image can’t be saved because it is hosted without cross-origin permission.'
+        );
+      }
+
+      const result = await uploadImage(blob);
+      if (!result) throw new Error('Upload failed. Please try again.');
+
+      // Only navigate once the save actually succeeded.
+      navigate('/album_display');
+    } catch (err) {
+      setSaveError(err.message || 'Could not save the image.');
+    } finally {
+      setSaving(false);
+    }
   };
 
 
@@ -528,13 +549,23 @@ export default function EditImage() {
           style={{ fontSize: "10px", width: "90%", marginTop: "1em", maxWidth: "1200px" }}
           variant="contained"
           onClick={handleSave}
+          disabled={saving}
+          startIcon={saving ? <CircularProgress size={14} color="inherit" /> : null}
         >
-          Save Changes
+          {saving ? "Saving…" : "Save Changes"}
         </Button>
       </Box>
 
-
-
+      <Snackbar
+        open={Boolean(saveError)}
+        autoHideDuration={6000}
+        onClose={() => setSaveError('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="error" variant="filled" onClose={() => setSaveError('')}>
+          {saveError}
+        </Alert>
+      </Snackbar>
     </Card>
   );
 }

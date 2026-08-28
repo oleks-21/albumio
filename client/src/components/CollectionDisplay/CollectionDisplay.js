@@ -1,5 +1,6 @@
+import { API_BASE } from '../../api';
 import React, { useEffect, useState } from 'react';
-import { FormControl, FormLabel, CircularProgress, Chip, Box } from '@mui/material';
+import { FormControl, CircularProgress, Chip, Box } from '@mui/material';
 import { useSelector } from 'react-redux';
 
 import './CollectionDisplay.css';
@@ -12,7 +13,7 @@ export default function CollectionDisplay({ selectedCollections, setSelectedColl
   useEffect(() => {
     const fetchCollections = async () => {
       try {
-        const response = await fetch(`https://albumio-backend.onrender.com/api/collections?email=${email}`)
+        const response = await fetch(`${API_BASE}/api/collections?email=${email}`)
 
         const data = await response.json();
         if (Array.isArray(data)) {

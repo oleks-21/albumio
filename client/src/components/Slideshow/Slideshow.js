@@ -41,8 +41,7 @@ export default function Slideshow({ images, onClose }) {
                 <div className={`slideshow-menu ${active ? 'visible' : 'hidden'}`}>
                     <Button
                         variant="contained"
-                        sx={{backgroundColor:autoPlay ? "#bc6f00" : "#006405", width:"5em"}}
-                        color="white"
+                        sx={{ backgroundColor: autoPlay ? "#bc6f00" : "#006405", color: "#fff", width: "5em" }}
                         onClick={() => {
                             setAutoPlay(!autoPlay);
 
@@ -84,6 +83,7 @@ export default function Slideshow({ images, onClose }) {
                 {/* --- CLOSE BUTTON --- */}
                 <IconButton
                     onClick={onClose}
+                    aria-label="Close slideshow"
                     className={`slideshow-close-button ${active ? 'visible' : 'hidden'}`}
                     sx={{
                         width: '32px !important',

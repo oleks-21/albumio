@@ -1,3 +1,4 @@
+import { API_BASE } from '../../api';
 import React, { useState } from 'react';
 import Button from '@mui/material/Button';
 import Stack from '@mui/material/Stack';
@@ -59,7 +60,7 @@ export default function FileSelect({ onImagesRetrieved }) {
     }
 
     try {
-      const response = await fetch('https://albumio-backend.onrender.com/api/upload-image', {
+      const response = await fetch(`${API_BASE}/api/upload-image`, {
         method: 'POST',
         body: formData
       });
@@ -140,7 +141,7 @@ export default function FileSelect({ onImagesRetrieved }) {
           color="primary"
           onClick={handleUpload}
           fullWidth
-          disabled={selectedFiles.length === 0 || collection.length == 0}
+          disabled={selectedFiles.length === 0 || collection.length === 0}
         >
           Upload All
         </Button>

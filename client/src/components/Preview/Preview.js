@@ -1,3 +1,4 @@
+import { API_BASE } from '../../api';
 import React, { useState } from 'react';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -15,7 +16,7 @@ export default function Preview({ imageName, imageUrl, imageCollection, onClose 
 
     const renameImage = async () => {
         try {
-            const response = await fetch('https://albumio-backend.onrender.com/api/rename-image', {
+            const response = await fetch(`${API_BASE}/api/rename-image`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ oldName: imageName, newName, email })
@@ -34,7 +35,7 @@ export default function Preview({ imageName, imageUrl, imageCollection, onClose 
     };
     const saveCollection = async () => {
         try {
-            const response = await fetch('https://albumio-backend.onrender.com/api/update-collection', {
+            const response = await fetch(`${API_BASE}/api/update-collection`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ imageName, email, newCollection })
