@@ -1,9 +1,13 @@
 import { API_BASE } from '../../api';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
 import FileSelect from '../FileSelect/FileSelect';
 import './Album.css';
 import Button from '@mui/material/Button';
+import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import Snackbar from '@mui/material/Snackbar';
 import Preview from '../Preview/Preview';
 import Slideshow from '../Slideshow/Slideshow';
 import CollectionDisplay from '../CollectionDisplay/CollectionDisplay';
@@ -31,6 +35,9 @@ export default function Album() {
   };
 
   const [manuallySelectedImageNames, setManuallySelectedImageNames] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
 
   const filteredImages = images.filter(img => {
     if (activeFilterSource === 'collection') {
@@ -44,9 +51,13 @@ export default function Album() {
     return true;
   });
 
-  const fetchUserImages = async () => {
+  // useCallback so the effect below has a correct, stable dependency (M9).
+  const fetchUserImages = useCallback(async () => {
+    if (!email) return;
+    setLoading(true);
+    setError('');
     try {
-      const response = await fetch(`${API_BASE}/api/my-images?email=${email}`);
+      const response = await fetch(`${API_BASE}/api/my-images?email=${encodeURIComponent(email)}`);
       const files = await response.json();
       if (response.ok && Array.isArray(files)) {
         const imagePreviews = files.map((file) => ({
@@ -60,18 +71,18 @@ export default function Album() {
           ...imagePreviews.filter((img) => !prev.some((prevImg) => prevImg.url === img.url))
         ]);
       } else {
-        console.error('Failed to fetch images');
+        setError('We couldn’t load your images. Please try again.');
       }
     } catch (err) {
-      console.error('Error fetching images:', err);
-    }
-  };
-
-  useEffect(() => {
-    if (email) {
-      fetchUserImages();
+      setError('We couldn’t load your images. Please check your connection and try again.');
+    } finally {
+      setLoading(false);
     }
   }, [email]);
+
+  useEffect(() => {
+    fetchUserImages();
+  }, [fetchUserImages]);
 
   const handleDelete = async (name) => {
     try {
@@ -90,10 +101,10 @@ export default function Album() {
           })
         );
       } else {
-        console.error('Deletion failed:', result.message);
+        setDeleteError(result.message || 'Could not delete the image. Please try again.');
       }
     } catch (err) {
-      console.error('Delete request error:', err);
+      setDeleteError('Could not delete the image. Please check your connection and try again.');
     }
   };
 
@@ -196,25 +207,66 @@ export default function Album() {
         Album Slideshow
       </Button>
       <div style={{ paddingLeft: "2em", paddingRight: "2em" }}>
+        {/* Loading (first load) */}
+        {loading && images.length === 0 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 6 }}>
+            <CircularProgress />
+          </Box>
+        )}
+
+        {/* Error (with retry) */}
+        {!loading && error && images.length === 0 && (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, py: 6 }}>
+            <Alert severity="error" variant="outlined" sx={{ maxWidth: 480 }}>
+              {error}
+            </Alert>
+            <Button variant="contained" color="primary" onClick={fetchUserImages}>
+              Retry
+            </Button>
+          </Box>
+        )}
+
+        {/* Empty (no images at all) */}
+        {!loading && !error && images.length === 0 && (
+          <Box sx={{ textAlign: 'center', py: 6 }}>
+            <Typography sx={{ color: 'text.secondary' }}>
+              No images yet. Use “Upload Images” above to add your first photos.
+            </Typography>
+          </Box>
+        )}
+
+        {/* Grid */}
         {images.length > 0 && (
-          <>
-            <div className="album-images">
+          <div className="album-images">
+            {filteredImages.length === 0 ? (
+              <Box sx={{ textAlign: 'center', py: 4 }}>
+                <Typography sx={{ color: 'text.secondary' }}>
+                  No images match the current filter.
+                </Typography>
+              </Box>
+            ) : (
               <ImageList
-                sx={{
-                  width: '100%',
-                  height: 'auto',
-                  overflow: 'hidden',
-                }}
+                sx={{ width: '100%', height: 'auto', overflow: 'hidden' }}
                 cols={getCols()}
                 gap={16}
               >
-                {filteredImages.map((img, index) => (
-                  <ImageListItem key={index} sx={{ position: 'relative' }}>
+                {filteredImages.map((img) => (
+                  <ImageListItem key={img.url} sx={{ position: 'relative' }}>
                     <img
                       src={img.url}
                       alt={img.file.name}
                       loading="lazy"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Preview ${img.file.name}`}
+                      style={{ cursor: 'pointer' }}
                       onClick={() => previewImage(img.file.name)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          previewImage(img.file.name);
+                        }
+                      }}
                     />
                     <IconButton
                       aria-label={`Delete ${img.file.name}`}
@@ -234,13 +286,21 @@ export default function Album() {
                   </ImageListItem>
                 ))}
               </ImageList>
-            </div>
-
-
-
-          </>
+            )}
+          </div>
         )}
       </div>
+
+      <Snackbar
+        open={Boolean(deleteError)}
+        autoHideDuration={6000}
+        onClose={() => setDeleteError('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="error" variant="filled" onClose={() => setDeleteError('')}>
+          {deleteError}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }

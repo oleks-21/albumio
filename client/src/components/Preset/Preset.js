@@ -2,7 +2,7 @@ import { API_BASE } from '../../api';
 import React, { useState, useEffect } from 'react';
 import { FormControlLabel, Checkbox, MenuItem, Select, FormControl, Box, Grid } from '@mui/material';
 import {
-  Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField,
+  Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert,
 } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Close';
@@ -23,34 +23,42 @@ export default function Preset({
   const [openDialog, setOpenDialog] = useState(false);
   const [presetName, setPresetName] = useState('');
   const [presets, setPresets] = useState([]);
+  const [presetError, setPresetError] = useState('');
 
   useEffect(() => {
+    if (!email) return;
+    let cancelled = false;
     const fetchPresets = async () => {
-      const res = await fetch(`${API_BASE}/api/user-presets?email=${email}`);
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        setPresets(data);
-      } else {
-        console.warn('Unexpected preset format:', data);
-        setPresets([]);
+      try {
+        const res = await fetch(`${API_BASE}/api/user-presets?email=${encodeURIComponent(email)}`);
+        const data = await res.json();
+        if (cancelled) return;
+        setPresets(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (!cancelled) setPresetError('Could not load your presets.');
       }
     };
     fetchPresets();
-  }, []);
+    return () => { cancelled = true; };
+  }, [email]);
 
   const handlePresetClick = async (presetName) => {
-    const res = await fetch(`${API_BASE}/api/preset-images?preset=${presetName}`);
-    const { imageIds } = await res.json();
+    try {
+      const res = await fetch(`${API_BASE}/api/preset-images?preset=${encodeURIComponent(presetName)}`);
+      const { imageIds } = await res.json();
 
-    // Set the checked images in the selector
-    setSelectedImageNames(imageIds);
-    setManuallySelectedImageNames(imageIds);
+      // Set the checked images in the selector
+      setSelectedImageNames(imageIds);
+      setManuallySelectedImageNames(imageIds);
 
-    // Force album to use preset filter
-    setActiveFilterSource('preset');
+      // Force album to use preset filter
+      setActiveFilterSource('preset');
 
-    // Optionally clear collections so they don't interfere
-    setSelectedCollections([]);
+      // Optionally clear collections so they don't interfere
+      setSelectedCollections([]);
+    } catch (err) {
+      setPresetError('Could not load that preset. Please try again.');
+    }
   };
 
   const handleSavePreset = async () => {
@@ -68,7 +76,7 @@ export default function Preset({
       setPresetName('');
       setOpenDialog(false);
     } catch (err) {
-      console.error('Error saving preset:', err);
+      setPresetError('Could not save the preset. Please try again.');
     }
   };
   useEffect(() => {
@@ -85,14 +93,6 @@ export default function Preset({
     setSelectedImageNames(updated);
     setManuallySelectedImageNames(updated);
     setActiveFilterSource('preset');
-  };
-  const generateColorFromName = (name) => {
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = hash % 360;
-    return `hsl(${hue}, 60%, 75%)`;
   };
   return (
     <Box sx={{ mt: 2, width: '100%' }}>
@@ -174,6 +174,7 @@ export default function Preset({
                   <span>{name}</span>
                   <IconButton
                     size="small"
+                    aria-label={`Delete preset ${name}`}
                     onClick={async (e) => {
                       e.stopPropagation();
                       try {
@@ -184,7 +185,7 @@ export default function Preset({
                         });
                         setPresets(prev => prev.filter(p => p !== name));
                       } catch (err) {
-                        console.error('Error deleting preset:', err);
+                        setPresetError('Could not delete the preset. Please try again.');
                       }
                     }}
                   >
@@ -215,6 +216,17 @@ export default function Preset({
           <Button onClick={handleSavePreset}>Save</Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={Boolean(presetError)}
+        autoHideDuration={6000}
+        onClose={() => setPresetError('')}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity="error" variant="filled" onClose={() => setPresetError('')}>
+          {presetError}
+        </Alert>
+      </Snackbar>
     </Box >
 
   );

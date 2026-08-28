@@ -9,6 +9,21 @@ import SectionContainer from '../common/SectionContainer';
 import GradientHeading from '../common/GradientHeading';
 import Reveal from '../common/Reveal';
 
+// On-brand placeholder shown when a (hot-linked) remote image fails to load,
+// so the landing page degrades gracefully instead of showing broken-image icons.
+const FALLBACK_IMAGE =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="220">' +
+      '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+      '<stop offset="0" stop-color="#111827"/><stop offset="1" stop-color="#1f2937"/>' +
+      '</linearGradient></defs>' +
+      '<rect width="400" height="220" fill="url(#g)"/>' +
+      '<text x="50%" y="50%" fill="#6366f1" font-family="Inter,Arial,sans-serif" ' +
+      'font-size="14" text-anchor="middle" dominant-baseline="middle">Image unavailable</text>' +
+    '</svg>'
+  );
+
 export default function MainPage() {
   const responsive = {
     desktop: { breakpoint: { max: 3000, min: 1024 }, items: 1 },
@@ -174,11 +189,20 @@ export default function MainPage() {
                           containerClass="carousel-container"
                           itemClass="carousel-item-padding"
                         >
-                          {feature.images.map((url, index) => (
-                            <div key={index}>
+                          {feature.images.map((url) => (
+                            <div key={url}>
                               <img
                                 src={url}
-                                alt={`template-${index}`}
+                                alt=""
+                                width={400}
+                                height={220}
+                                loading="lazy"
+                                onError={(e) => {
+                                  // Swap once to the placeholder; guard against loops.
+                                  if (e.currentTarget.dataset.fallback) return;
+                                  e.currentTarget.dataset.fallback = 'true';
+                                  e.currentTarget.src = FALLBACK_IMAGE;
+                                }}
                                 style={{
                                   width: '100%',
                                   height: '220px',

@@ -75,6 +75,9 @@ export default function EditImage() {
     if (strokeCanvasRef.current) {
       strokeCtxRef.current = strokeCanvasRef.current.getContext("2d");
     }
+    // Mount-only context acquisition; `thickness` is applied per-stroke, so it
+    // is intentionally not a dependency here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getScaledCoords = (e) => {
