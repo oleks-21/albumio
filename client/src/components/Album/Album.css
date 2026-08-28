@@ -115,7 +115,9 @@
   padding: 4px;
 }
 #slideshowButton{
-  margin-top: 3em;
+  display: block;
+  width: fit-content;
+  margin: 3em auto 0;
   background-image: linear-gradient(to top, #4f46e5, #6366f1);
   background-size: 100% 100%;
   background-position: bottom;

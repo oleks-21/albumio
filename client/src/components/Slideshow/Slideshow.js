@@ -3,6 +3,7 @@ import Carousel from "react-multi-carousel";
 import Button from '@mui/material/Button';
 import Slider from '@mui/material/Slider';
 import IconButton from '@mui/material/IconButton';
+import { tokens } from '../../theme';
 import './Slideshow.css';
 
 export default function Slideshow({ images, onClose }) {
@@ -41,7 +42,14 @@ export default function Slideshow({ images, onClose }) {
                 <div className={`slideshow-menu ${active ? 'visible' : 'hidden'}`}>
                     <Button
                         variant="contained"
-                        sx={{ backgroundColor: autoPlay ? "#bc6f00" : "#006405", color: "#fff", width: "5em" }}
+                        color="primary"
+                        sx={{
+                            width: "5em",
+                            // Playing = muted/dark (Stop); idle = indigo primary (Start)
+                            ...(autoPlay
+                                ? { backgroundImage: 'none', backgroundColor: tokens.gray700, color: tokens.gray100, '&:hover': { backgroundColor: tokens.gray600 } }
+                                : {}),
+                        }}
                         onClick={() => {
                             setAutoPlay(!autoPlay);
 
@@ -68,12 +76,12 @@ export default function Slideshow({ images, onClose }) {
                             sx={{
                                 width: "80%",
                                 ml: 2,
-                                color: "#42bcf5", // custom track color
+                                color: tokens.indigo500,
                                 '& .MuiSlider-thumb': {
-                                    backgroundColor: '#42f5da',
+                                    backgroundColor: tokens.indigo300,
                                 },
                                 '& .MuiSlider-rail': {
-                                    backgroundColor: '#42bcf5',
+                                    backgroundColor: tokens.gray700,
                                 },
                             }}
                         />
@@ -89,10 +97,11 @@ export default function Slideshow({ images, onClose }) {
                         width: '32px !important',
                         height: '32px !important',
                         fontSize: '0.75rem',
-                        color: '#fff',
-                        backgroundColor: '#a70c00',
+                        color: tokens.gray200,
+                        backgroundColor: tokens.gray800,
+                        border: `1px solid ${tokens.gray700}`,
                         '&:hover': {
-                            backgroundColor: '#c92222',
+                            backgroundColor: tokens.gray700,
                         },
                     }}
                 >

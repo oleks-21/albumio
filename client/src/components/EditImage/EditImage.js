@@ -521,8 +521,8 @@ export default function EditImage() {
                     left: `${cropRect.x / canvasRef.current.dataset.scaleX}px`,
                     width: `${cropRect.w / canvasRef.current.dataset.scaleX}px`,
                     height: `${cropRect.h / canvasRef.current.dataset.scaleY}px`,
-                    border: "2px dashed #00f",
-                    backgroundColor: "rgba(0,0,255,0.1)",
+                    border: "2px dashed #6366f1",
+                    backgroundColor: "rgba(99,102,241,0.12)",
                     pointerEvents: "none",
                   }}
                 />
