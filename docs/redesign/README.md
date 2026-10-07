@@ -1,4 +1,4 @@
-# Albumio redesign — “The Memory Gallery”
+# Albumio redesign
 
 What changed in the client redesign, how it was checked, and what still depends
 on the backend. Screenshots are in [`screenshots/`](screenshots). They were
@@ -7,14 +7,30 @@ real account data appears in them.
 
 ## What changed
 
-**Foundation.** `src/theme.js` now holds semantic tokens: warm paper surfaces,
-deep-teal accent, a charcoal viewer and destructive red. The same values are
-CSS custom properties in `index.css`. There is a light app theme and a dark
-`viewerTheme` for the photo viewer and slideshow. Inter is used for the UI and
+**Foundation.** `src/theme.js` holds the "Lagoon" palette: turquoise actions,
+light-blue accents and aqua-tinted surfaces with deep-ink text, plus a
+deep-water dark scheme. The raw values are in `palettes`; `tokens` are
+references to matching CSS custom properties in `index.css`, so `sx` props and
+stylesheets follow the active scheme. The photo viewer and slideshow use a
+separate `viewerTheme` that is dark in both schemes. Inter is used for the UI and
 Georgia for display headings. The routed content now sits in a `<main>`, and the
 header height is set once per breakpoint (64 / 72px). The gradient heading
 component, the indigo glow and the glass styling are gone. Reveal animations
 respect `prefers-reduced-motion`.
+
+**Light and dark mode.** The theme uses MUI's CSS-variable color schemes,
+switched by a `data-theme` attribute on `<html>`.
+- **Default.** It follows the OS setting until the person picks a mode.
+- **Toggle.** A sun/moon button sits in the header on desktop, and a Light
+  mode / Dark mode button is in the mobile menu. MUI remembers the choice in
+  localStorage (`mui-mode`).
+- **No flash.** An inline script in `public/index.html` applies the saved or
+  system scheme before the first paint.
+- **Screenshots.** The homepage walkthrough shows light or dark product
+  screenshots to match the active mode.
+
+The palette was guided by common turquoise UI pairings: pale aqua surfaces,
+deep navy or slate ink, and near-black slate for dark backgrounds.
 
 **Header and homepage** (`TopBar`, `MainPage`).
 - The header now has a brand link, real page links (How it works, About, or
@@ -101,6 +117,12 @@ stacking instead of a very high z-index.
 - **Keyboard.** Space plays and pauses, the arrows navigate, and Escape closes.
 - **Scope.** The scope is named: all photos, the current filters, or the saved
   slideshow. The launch button is disabled when no photos are shown.
+- **Autoplay fix.** Autoplay used to turn the screen black after the first
+  advance. `useImageStatus` reset each new photo to "loading" in an effect.
+  Timer-driven updates run that effect after paint. By then the next photo,
+  already cached by the preloader, had fired its `load` event, so the late
+  reset hid it. The hook now resets during render and checks the element's
+  `complete` flag.
 
 **Editor** (`EditImage`).
 - **Layout.** A header holds Back to library, the filename and Save changes. The
@@ -121,8 +143,9 @@ stacking instead of a very high z-index.
 ## Validation
 
 - `npm run build` compiles with no warnings.
-- `npm test`: the old "learn react" test is replaced by 8 workflow tests with
-  mocked requests. All 8 pass. They cover:
+- `npm test`: 13 tests, all passing, with mocked requests. They cover:
+  - the light/dark toggle and remembering the choice
+  - image status: cached images, source changes and load timeouts
   - homepage → registration dialog
   - filtering kept separate from selection
   - saved-slideshow apply/clear
@@ -131,8 +154,12 @@ stacking instead of a very high z-index.
   - viewer arrow keys, Escape and focus return
   - a failed delete keeping the photo
   - an upload with partial failure
-- Browser checks: 46 scripted Playwright checks ran against a mock API in
-  Chrome, and all pass. They cover:
+- Browser checks: scripted Playwright checks ran against a mock API in Chrome.
+  The mock serves cacheable images, like the real image CDN. The checks ran in
+  both color schemes, and all pass. They cover:
+  - the scheme following the system, the toggle, persistence across reload, and
+    the no-flash script
+  - slideshow autoplay advancing with visible photos
   - search, sort, filters, no-results and saved slideshows (including missing
     photos)
   - selection and save failures
@@ -146,7 +173,9 @@ stacking instead of a very high z-index.
   - closing the menu before showing the auth dialog
 - No horizontal overflow at 360, 390, 768, 1024 and 1440px. The slideshow was
   checked in portrait and landscape on a phone viewport.
-- Text contrast: every token pair is at least 4.9:1.
+- Text contrast: every text color on every surface is at least 4.5:1 in both
+  schemes (the lowest is turquoise links on the selected surface in light mode,
+  4.54:1).
 
 ## Backend dependencies and open issues
 
