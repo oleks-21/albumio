@@ -1,18 +1,22 @@
 import { API_BASE } from '../../api';
 import { useLocation } from "react-router-dom";
-import Card from "@mui/material/Card";
 import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import CreateIcon from "@mui/icons-material/Create";      // ✏️ Draw
 import CropIcon from "@mui/icons-material/Crop";          // ✂️ Crop
 import ColorLensIcon from "@mui/icons-material/ColorLens"; // 🎨 Adjust
-import { useState, useRef, useEffect } from "react";
-import { Button, IconButton, Tooltip, Slider, ToggleButton, ToggleButtonGroup, Snackbar, Alert, CircularProgress } from "@mui/material";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Button, Slider, ToggleButton, ToggleButtonGroup, Snackbar, Alert, CircularProgress } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import BrokenImageOutlinedIcon from "@mui/icons-material/BrokenImageOutlined";
 import AutoFixOffIcon from "@mui/icons-material/AutoFixOff"; // 🩹 Eraser
 import { useSelector } from "react-redux";
-import Input from '@mui/material/Input';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { tokens } from '../../theme';
+import './EditImage.css';
 
 /**
  * Brush stroke types. `dash` is a function of the current line width so the
@@ -28,7 +32,7 @@ const STROKE_TYPES = {
 export default function EditImage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { imageUrl, imageName } = location.state || {};
+  const { imageUrl, imageName, collection: imageCollection } = location.state || {};
   const [tabValue, setTabValue] = useState(0);
 
   const canvasRef = useRef(null);
@@ -60,7 +64,11 @@ export default function EditImage() {
   const [temperature, setTemperature] = useState(0); // warm/cool shift
 
   const [newImageName, setNewImageName] = useState(imageName || '');
-  const [newCollection, setNewCollection] = useState('');
+  const [newCollection, setNewCollection] = useState(imageCollection || '');
+  const [imageStatus, setImageStatus] = useState('loading');
+  // Bumped whenever the displayed image size changes so the crop overlay re-renders.
+  const [, setLayoutVersion] = useState(0);
+  const imgRef = useRef(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const email = useSelector(state => state.user.email);
@@ -79,6 +87,38 @@ export default function EditImage() {
     // is intentionally not a dependency here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  /**
+   * Match the canvases' on-screen size to the displayed image and record the
+   * natural/displayed scale used to map pointer positions. Only the CSS size
+   * changes on resize, so existing artwork is preserved; the bitmap is sized
+   * once, on load.
+   */
+  const syncCanvasSize = useCallback((img, { initBitmap = false } = {}) => {
+    if (!img || !img.clientWidth || !img.clientHeight) return;
+    [canvasRef.current, strokeCanvasRef.current].forEach((canvas) => {
+      if (!canvas) return;
+      if (initBitmap) {
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+      }
+      canvas.style.width = `${img.clientWidth}px`;
+      canvas.style.height = `${img.clientHeight}px`;
+      canvas.dataset.scaleX = (img.naturalWidth / img.clientWidth).toString();
+      canvas.dataset.scaleY = (img.naturalHeight / img.clientHeight).toString();
+    });
+    setLayoutVersion((v) => v + 1);
+  }, []);
+
+  useEffect(() => {
+    const img = imgRef.current;
+    if (!img || typeof ResizeObserver === 'undefined') return undefined;
+    const observer = new ResizeObserver(() => {
+      if (img.complete && img.naturalWidth) syncCanvasSize(img);
+    });
+    observer.observe(img);
+    return () => observer.disconnect();
+  }, [syncCanvasSize, imageUrl]);
 
   const getScaledCoords = (e) => {
     const canvas = canvasRef.current;
@@ -318,152 +358,69 @@ export default function EditImage() {
   };
 
 
+  const toolLabelSx = { fontSize: '0.875rem', fontWeight: 600, color: tokens.text, mb: 0.5, display: 'block' };
+
+  if (!imageUrl) {
+    return (
+      <div className="editor-empty">
+        <Typography variant="h2" component="h1" sx={{ fontSize: '1.75rem' }}>No photo to edit</Typography>
+        <Typography color="text.secondary">
+          Open a photo from your library and choose <strong>Edit photo</strong> to start editing.
+        </Typography>
+        <Button variant="contained" component={RouterLink} to="/album_display" startIcon={<ArrowBackIcon />}>
+          Back to library
+        </Button>
+      </div>
+    );
+  }
+
+  const scaleX = parseFloat(canvasRef.current?.dataset.scaleX || "1");
+  const scaleY = parseFloat(canvasRef.current?.dataset.scaleY || "1");
+  const pointerTool = tabValue === 0 || tabValue === 1;
+
   return (
-    <Card
-      sx={{
-        p: 2,
-        minHeight: "100vh",       // 👈 ensures card fills viewport height
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between"
-      }}
-    >      {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-        <Tabs
-          value={tabValue}
-          onChange={(e, newValue) => setTabValue(newValue)}
-          centered
-          textColor="primary"
-          indicatorColor="primary"
-          variant="fullWidth"
+    <div className="editor">
+      <header className="editor__bar">
+        <Button component={RouterLink} to="/album_display" startIcon={<ArrowBackIcon />} sx={{ color: tokens.text, flexShrink: 0 }}>
+          <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>Back to library</Box>
+          <Box component="span" sx={{ display: { xs: 'inline', sm: 'none' } }}>Back</Box>
+        </Button>
+        <Typography component="h1" variant="h6" noWrap title={imageName} sx={{ flex: 1, minWidth: 0 }}>
+          {imageName || 'Untitled photo'}
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={handleSave}
+          disabled={saving || imageStatus !== 'loaded'}
+          startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
+          sx={{ flexShrink: 0 }}
         >
-          <Tab icon={<CreateIcon />} label="Draw" />
-          <Tab icon={<CropIcon />} label="Crop" />
-          <Tab icon={<ColorLensIcon />} label="Adjust Color" />
-        </Tabs>
-      </Box>
+          {saving ? "Saving…" : "Save changes"}
+        </Button>
+      </header>
 
-      <Box sx={{ mt: 2, display: "flex", justifyContent: "center", alignItems: "flex-start", width: "100%", gap: 3 }}>
-        {/* Left Side Tools */}
-        {tabValue !== 1 && (   // 👈 hide tools when cropping
-          <Box sx={{ width: "50%", maxWidth: "400px", display: "flex", flexDirection: "column", gap: 2 }}>
-            {/* Drawing Tools */}
-            {tabValue === 0 && (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-                <label htmlFor="brushColor" style={{ fontSize: "0.9rem" }}>Brush Color:</label>
-                <div style={{ width: "100%" }}>
-                  <input
-                    type="color"
-                    id="brushColor"
-                    value={brushColor}
-                    onChange={(e) => setBrushColor(e.target.value)}
-                    style={{ width: "40px", height: "40px", border: "none", cursor: "pointer" }}
-                    disabled={isEraser}
-                  />
-                </div>
-                <Tooltip title="Toggle Eraser" sx={{ width: '40px', alignSelf: "center" }}>
-                  <IconButton onClick={() => setIsEraser((prev) => !prev)} color={isEraser ? "primary" : "default"}>
-                    <AutoFixOffIcon />
-                  </IconButton>
-                </Tooltip>
-
-                <Box>
-                  <span style={{ fontSize: "0.8rem" }}>Brush Size</span>
-                  <Slider min={1} max={50} value={thickness} onChange={(_, v) => setThickness(v)} />
-                </Box>
-
-                <Box>
-                  <span style={{ fontSize: "0.8rem" }}>
-                    Opacity: {brushOpacity}%
-                  </span>
-                  <Slider
-                    min={1}
-                    max={100}
-                    value={brushOpacity}
-                    onChange={(_, v) => setBrushOpacity(v)}
-                    disabled={isEraser}
-                  />
-                </Box>
-
-                <Box>
-                  <span style={{ fontSize: "0.8rem" }}>Stroke Type</span>
-                  <ToggleButtonGroup
-                    value={strokeType}
-                    exclusive
-                    onChange={(_, v) => { if (v) setStrokeType(v); }}
-                    size="small"
-                    fullWidth
-                    disabled={isEraser}
-                    sx={{ mt: 1, flexWrap: "wrap" }}
-                  >
-                    {Object.entries(STROKE_TYPES).map(([key, cfg]) => (
-                      <ToggleButton key={key} value={key} sx={{ textTransform: "none", fontSize: "0.75rem" }}>
-                        {cfg.label}
-                      </ToggleButton>
-                    ))}
-                  </ToggleButtonGroup>
-                </Box>
-              </Box>
-            )}
-
-            {/* Adjust Color Tools */}
-            {tabValue === 2 && (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <Box>
-                  <span style={{ fontSize: "0.8rem" }}>Hue: {hue}°</span>
-                  <Slider min={-180} max={180} value={hue} onChange={(_, v) => setHue(v)} />
-                </Box>
-                <Box>
-                  <span style={{ fontSize: "0.8rem" }}>Saturation: {saturation}%</span>
-                  <Slider min={0} max={300} value={saturation} onChange={(_, v) => setSaturation(v)} />
-                </Box>
-                <Box>
-                  <span style={{ fontSize: "0.8rem" }}>Temperature: {temperature}</span>
-                  <Slider min={-100} max={100} value={temperature} onChange={(_, v) => setTemperature(v)} />
-                </Box>
-              </Box>
-            )}
-          </Box>
-        )}
-
-        {/* Right Side: Image + Canvas */}
-        <Box
-          sx={{
-            mt: 2,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            width: tabValue === 1 ? "100%" : "50%",   // 👈 full width in crop mode
-            height: "100%",
-          }}
-        >
-          {imageUrl ? (
-            <div style={{ position: "relative" }}>
+      <div className="editor__body">
+        <div className="editor__stage">
+          {imageStatus === 'error' ? (
+            <div className="editor__failed">
+              <BrokenImageOutlinedIcon sx={{ fontSize: 40 }} aria-hidden />
+              <Typography>This photo couldn’t be loaded for editing.</Typography>
+              <Button variant="outlined" component={RouterLink} to="/album_display">Back to library</Button>
+            </div>
+          ) : (
+            <div className="editor__canvas-wrap">
               <img
+                ref={imgRef}
                 src={imageUrl}
-                alt={imageName || "Editing"}
+                alt={imageName || "Photo being edited"}
                 crossOrigin="anonymous"
-                style={{
-                  maxWidth: "100%",
-                  maxHeight: "80vh",
-                  objectFit: "contain",
-                  borderRadius: "8px",
-                  display: "block",
-                  filter: filterString,
-                  margin: "0 auto",              // 👈 center
-                }}
+                className="editor__image"
+                style={{ filter: filterString }}
                 id="editImage"
+                onError={() => setImageStatus('error')}
                 onLoad={(e) => {
                   const img = e.target;
-                  [canvasRef.current, strokeCanvasRef.current].forEach((canvas) => {
-                    if (!canvas) return;
-                    canvas.width = img.naturalWidth;
-                    canvas.height = img.naturalHeight;
-                    canvas.style.width = `${img.clientWidth}px`;
-                    canvas.style.height = `${img.clientHeight}px`;
-                    canvas.dataset.scaleX = (img.naturalWidth / img.clientWidth).toString();
-                    canvas.dataset.scaleY = (img.naturalHeight / img.clientHeight).toString();
-                  });
+                  syncCanvasSize(img, { initBitmap: true });
                   // Acquire contexts here too, so drawing works regardless of
                   // whether the canvas existed at initial mount.
                   if (canvasRef.current) {
@@ -474,90 +431,187 @@ export default function EditImage() {
                   if (strokeCanvasRef.current) {
                     strokeCtxRef.current = strokeCanvasRef.current.getContext("2d");
                   }
+                  setImageStatus('loaded');
                 }}
               />
+              {imageStatus === 'loading' && <CircularProgress className="editor__spinner" aria-label="Loading photo" />}
               {/* Overlay layer showing the in-progress brush stroke (preview only) */}
               <canvas
                 ref={strokeCanvasRef}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  pointerEvents: "none",
-                  zIndex: 2,
-                }}
+                style={{ position: "absolute", top: 0, left: 0, pointerEvents: "none", zIndex: 2 }}
               />
               <canvas
                 ref={canvasRef}
+                aria-label={tabValue === 1 ? "Crop area: drag to select" : "Drawing area"}
                 style={{
                   position: "absolute",
                   top: 0,
                   left: 0,
-                  pointerEvents: tabValue === 0 || tabValue === 1 ? "auto" : "none",
-                  cursor: tabValue === 0 || tabValue === 1 ? "crosshair" : "default",
+                  pointerEvents: pointerTool ? "auto" : "none",
+                  cursor: pointerTool ? "crosshair" : "default",
+                  touchAction: pointerTool ? "none" : "auto",
                 }}
-                onMouseDown={(e) => {
+                onPointerDown={(e) => {
+                  e.currentTarget.setPointerCapture?.(e.pointerId);
                   if (tabValue === 0) startDrawing(e);
                   if (tabValue === 1) startSelection(e);
                 }}
-                onMouseMove={(e) => {
+                onPointerMove={(e) => {
                   if (tabValue === 0) draw(e);
                   if (tabValue === 1) updateSelection(e);
                 }}
-                onMouseUp={(e) => {
+                onPointerUp={(e) => {
                   if (tabValue === 0) stopDrawing(e);
                   if (tabValue === 1) stopSelection(e);
                 }}
-                onMouseLeave={(e) => {
+                onPointerCancel={(e) => {
                   if (tabValue === 0) stopDrawing(e);
                   if (tabValue === 1) stopSelection(e);
                 }}
               />
               {cropRect && (
                 <div
+                  className="editor__crop"
                   style={{
-                    position: "absolute",
-                    top: `${cropRect.y / canvasRef.current.dataset.scaleY}px`,
-                    left: `${cropRect.x / canvasRef.current.dataset.scaleX}px`,
-                    width: `${cropRect.w / canvasRef.current.dataset.scaleX}px`,
-                    height: `${cropRect.h / canvasRef.current.dataset.scaleY}px`,
-                    border: "2px dashed #6366f1",
-                    backgroundColor: "rgba(99,102,241,0.12)",
-                    pointerEvents: "none",
+                    top: `${cropRect.y / scaleY}px`,
+                    left: `${cropRect.x / scaleX}px`,
+                    width: `${cropRect.w / scaleX}px`,
+                    height: `${cropRect.h / scaleY}px`,
                   }}
                 />
               )}
             </div>
-          ) : (
-            <p>No image selected for editing.</p>
           )}
-        </Box>
-      </Box>
+        </div>
 
+        <aside className="editor__panel" aria-label="Editing tools">
+          <Tabs
+            value={tabValue}
+            onChange={(e, newValue) => setTabValue(newValue)}
+            variant="fullWidth"
+            aria-label="Editing tool"
+            sx={{ borderBottom: 1, borderColor: "divider", mb: 2.5, '& .MuiTab-root': { textTransform: 'none', minHeight: 56, fontSize: '0.875rem' } }}
+          >
+            <Tab icon={<CreateIcon fontSize="small" />} label="Draw" />
+            <Tab icon={<CropIcon fontSize="small" />} label="Crop" />
+            <Tab icon={<ColorLensIcon fontSize="small" />} label="Color" />
+          </Tabs>
 
-      <Box direction="row" sx={{ mt: 3, display: 'flex', width: "100%", flexDirection: 'column', gap: 2, alignItems: 'center' }}>
-        <Input
-          placeholder="Image Name"
-          value={newImageName}
-          onChange={(e) => setNewImageName(e.target.value)}
-          sx={{ width: '90%', maxWidth: "1200px" }}
-        />
-        <Input
-          placeholder="Image Collection"
-          value={newCollection}
-          onChange={(e) => setNewCollection(e.target.value)}
-          sx={{ width: '90%', maxWidth: "1200px" }}
-        />
-        <Button
-          style={{ fontSize: "10px", width: "90%", marginTop: "1em", maxWidth: "1200px" }}
-          variant="contained"
-          onClick={handleSave}
-          disabled={saving}
-          startIcon={saving ? <CircularProgress size={14} color="inherit" /> : null}
-        >
-          {saving ? "Saving…" : "Save Changes"}
-        </Button>
-      </Box>
+          {tabValue === 0 && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Box>
+                  <Typography component="label" htmlFor="brushColor" sx={toolLabelSx}>Brush color</Typography>
+                  <input
+                    type="color"
+                    id="brushColor"
+                    value={brushColor}
+                    onChange={(e) => setBrushColor(e.target.value)}
+                    className="editor__color"
+                    disabled={isEraser}
+                  />
+                </Box>
+                <ToggleButton
+                  value="eraser"
+                  selected={isEraser}
+                  onChange={() => setIsEraser((prev) => !prev)}
+                  aria-label="Eraser"
+                  sx={{ ml: 'auto', textTransform: 'none', gap: 1, height: 44 }}
+                >
+                  <AutoFixOffIcon fontSize="small" /> Eraser
+                </ToggleButton>
+              </Box>
+
+              <Box>
+                <Typography id="brush-size-label" component="span" sx={toolLabelSx}>Brush size: {thickness}px</Typography>
+                <Slider min={1} max={50} value={thickness} onChange={(_, v) => setThickness(v)} aria-labelledby="brush-size-label" />
+              </Box>
+
+              <Box>
+                <Typography id="brush-opacity-label" component="span" sx={toolLabelSx}>Opacity: {brushOpacity}%</Typography>
+                <Slider
+                  min={1}
+                  max={100}
+                  value={brushOpacity}
+                  onChange={(_, v) => setBrushOpacity(v)}
+                  disabled={isEraser}
+                  aria-labelledby="brush-opacity-label"
+                />
+              </Box>
+
+              <Box>
+                <Typography id="stroke-type-label" component="span" sx={toolLabelSx}>Stroke type</Typography>
+                <ToggleButtonGroup
+                  value={strokeType}
+                  exclusive
+                  onChange={(_, v) => { if (v) setStrokeType(v); }}
+                  size="small"
+                  fullWidth
+                  disabled={isEraser}
+                  aria-labelledby="stroke-type-label"
+                >
+                  {Object.entries(STROKE_TYPES).map(([key, cfg]) => (
+                    <ToggleButton key={key} value={key} sx={{ textTransform: "none", fontSize: "0.8125rem" }}>
+                      {cfg.label}
+                    </ToggleButton>
+                  ))}
+                </ToggleButtonGroup>
+              </Box>
+            </Box>
+          )}
+
+          {tabValue === 1 && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              <Typography variant="body2" color="text.secondary">
+                Drag across the photo to choose the area to keep. The crop is applied when you save.
+              </Typography>
+              <Button variant="outlined" onClick={() => setCropRect(null)} disabled={!cropRect} sx={{ alignSelf: 'flex-start' }}>
+                Clear selection
+              </Button>
+            </Box>
+          )}
+
+          {tabValue === 2 && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+              <Box>
+                <Typography id="hue-label" component="span" sx={toolLabelSx}>Hue: {hue}°</Typography>
+                <Slider min={-180} max={180} value={hue} onChange={(_, v) => setHue(v)} aria-labelledby="hue-label" />
+              </Box>
+              <Box>
+                <Typography id="saturation-label" component="span" sx={toolLabelSx}>Saturation: {saturation}%</Typography>
+                <Slider min={0} max={300} value={saturation} onChange={(_, v) => setSaturation(v)} aria-labelledby="saturation-label" />
+              </Box>
+              <Box>
+                <Typography id="temperature-label" component="span" sx={toolLabelSx}>Temperature: {temperature}</Typography>
+                <Slider min={-100} max={100} value={temperature} onChange={(_, v) => setTemperature(v)} aria-labelledby="temperature-label" />
+              </Box>
+            </Box>
+          )}
+
+          <Box component="section" aria-labelledby="save-details-heading" sx={{ mt: 4, pt: 3, borderTop: `1px solid ${tokens.border}` }}>
+            <Typography id="save-details-heading" component="h2" variant="h6" sx={{ mb: 0.5 }}>Save details</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Saving with the current name replaces the original photo. Enter a new name to keep both.
+            </Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <TextField
+                label="File name"
+                value={newImageName}
+                onChange={(e) => setNewImageName(e.target.value)}
+                size="small"
+                fullWidth
+              />
+              <TextField
+                label="Collection"
+                value={newCollection}
+                onChange={(e) => setNewCollection(e.target.value)}
+                size="small"
+                fullWidth
+              />
+            </Box>
+          </Box>
+        </aside>
+      </div>
 
       <Snackbar
         open={Boolean(saveError)}
@@ -569,6 +623,6 @@ export default function EditImage() {
           {saveError}
         </Alert>
       </Snackbar>
-    </Card>
+    </div>
   );
 }

@@ -1,0 +1,131 @@
+/* Photo editor (/edit) */
+.editor {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - var(--header-height));
+}
+
+.editor__bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+@media (min-width: 600px) {
+  .editor__bar { padding: 12px 24px; }
+}
+
+.editor__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 900px) {
+  .editor__body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 304px;
+    min-height: 0;
+  }
+}
+
+.editor__stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--color-surface-subtle);
+  min-height: 50vh;
+}
+
+@media (min-width: 900px) {
+  .editor__stage {
+    padding: 24px;
+    min-height: calc(100vh - var(--header-height) - 65px);
+  }
+}
+
+.editor__canvas-wrap {
+  position: relative;
+  max-width: 100%;
+}
+
+.editor__image {
+  display: block;
+  max-width: 100%;
+  max-height: 60vh;
+  object-fit: contain;
+  border-radius: 4px;
+  margin: 0 auto;
+}
+
+@media (min-width: 900px) {
+  .editor__image {
+    max-height: calc(100vh - var(--header-height) - 65px - 48px);
+  }
+}
+
+.editor__spinner.MuiCircularProgress-root {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: -20px 0 0 -20px;
+}
+
+.editor__crop {
+  position: absolute;
+  border: 2px dashed var(--color-accent);
+  background-color: rgba(36, 102, 83, 0.14);
+  box-shadow: 0 0 0 9999px rgba(21, 25, 24, 0.35);
+  pointer-events: none;
+}
+
+.editor__canvas-wrap {
+  overflow: hidden;
+}
+
+.editor__failed,
+.editor-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.editor-empty {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 96px 16px;
+  color: var(--color-text);
+}
+
+.editor__panel {
+  padding: 16px 16px 48px;
+  background: var(--color-page);
+  /* Slider thumbs have a 42px touch target that would poke past the edge. */
+  overflow-x: clip;
+}
+
+@media (min-width: 900px) {
+  .editor__panel {
+    padding: 16px 24px 48px;
+    border-left: 1px solid var(--color-border);
+    overflow-y: auto;
+    max-height: calc(100vh - var(--header-height) - 65px);
+  }
+}
+
+.editor__color {
+  width: 44px;
+  height: 44px;
+  padding: 2px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  cursor: pointer;
+}
