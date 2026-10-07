@@ -189,6 +189,7 @@ export default function Preview({
               {img.status !== 'error' && (
                 <img
                   key={img.key}
+                  ref={img.ref}
                   src={img.src}
                   alt={photo.name}
                   onLoad={img.onLoad}

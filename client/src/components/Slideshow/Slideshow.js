@@ -37,6 +37,7 @@ function Slide({ photo, onSkip }) {
   return (
     <img
       key={img.key}
+      ref={img.ref}
       src={img.src}
       alt={photo.name}
       onLoad={img.onLoad}

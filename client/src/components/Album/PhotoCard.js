@@ -43,6 +43,7 @@ function PhotoCard({ photo, selectionMode, selected, onOpen, onToggleSelect, onE
           {img.status !== 'error' && (
             <img
               key={img.key}
+              ref={img.ref}
               src={img.src}
               alt=""
               loading="lazy"
