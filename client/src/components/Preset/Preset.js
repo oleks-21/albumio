@@ -1,233 +1,151 @@
-import { API_BASE } from '../../api';
-import React, { useState, useEffect } from 'react';
-import { FormControlLabel, Checkbox, MenuItem, Select, FormControl, Box, Grid } from '@mui/material';
-import {
-  Button, Dialog, DialogTitle, DialogContent, DialogActions, TextField, Snackbar, Alert,
-} from '@mui/material';
+import { useEffect, useState } from 'react';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+import Alert from '@mui/material/Alert';
+import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
-import DeleteIcon from '@mui/icons-material/Close';
+import Tooltip from '@mui/material/Tooltip';
+import CircularProgress from '@mui/material/CircularProgress';
+import SlideshowOutlinedIcon from '@mui/icons-material/SlideshowOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
+import { tokens } from '../../theme';
+import { rowSx } from '../CollectionDisplay/CollectionDisplay';
 
-import './Preset.css';
-export default function Preset({
-  allImages,
-  selectedImages,
-  selectedCollections,
-  setSelectedCollections,
-  setManuallySelectedImageNames,
-  setActiveFilterSource,
-  email
-}) {
-  const [selectedImageNames, setSelectedImageNames] = useState([]);
-
-
-  const [openDialog, setOpenDialog] = useState(false);
-  const [presetName, setPresetName] = useState('');
-  const [presets, setPresets] = useState([]);
-  const [presetError, setPresetError] = useState('');
-
-  useEffect(() => {
-    if (!email) return;
-    let cancelled = false;
-    const fetchPresets = async () => {
-      try {
-        const res = await fetch(`${API_BASE}/api/user-presets?email=${encodeURIComponent(email)}`);
-        const data = await res.json();
-        if (cancelled) return;
-        setPresets(Array.isArray(data) ? data : []);
-      } catch (err) {
-        if (!cancelled) setPresetError('Could not load your presets.');
-      }
-    };
-    fetchPresets();
-    return () => { cancelled = true; };
-  }, [email]);
-
-  const handlePresetClick = async (presetName) => {
-    try {
-      const res = await fetch(`${API_BASE}/api/preset-images?preset=${encodeURIComponent(presetName)}`);
-      const { imageIds } = await res.json();
-
-      // Set the checked images in the selector
-      setSelectedImageNames(imageIds);
-      setManuallySelectedImageNames(imageIds);
-
-      // Force album to use preset filter
-      setActiveFilterSource('preset');
-
-      // Optionally clear collections so they don't interfere
-      setSelectedCollections([]);
-    } catch (err) {
-      setPresetError('Could not load that preset. Please try again.');
-    }
-  };
-
-  const handleSavePreset = async () => {
-    if (!presetName.trim()) return;
-    try {
-      await fetch(`${API_BASE}/api/save-preset`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email,
-          presetName,
-          imageIds: selectedImageNames,
-        }),
-      });
-      setPresetName('');
-      setOpenDialog(false);
-    } catch (err) {
-      setPresetError('Could not save the preset. Please try again.');
-    }
-  };
-  useEffect(() => {
-    setSelectedImageNames(prev =>
-      prev.length > 0 ? prev : selectedImages.map(img => img.file.name)
-    );
-  }, [selectedImages]);
-
-  const handleToggleImage = (name) => {
-    const updated = selectedImageNames.includes(name)
-      ? selectedImageNames.filter(n => n !== name)
-      : [...selectedImageNames, name];
-
-    setSelectedImageNames(updated);
-    setManuallySelectedImageNames(updated);
-    setActiveFilterSource('preset');
-  };
+/** "Saved slideshows" section of the library sidebar. */
+export default function SavedSlideshowList({ presets, loading, error, activeName, onApply, onRequestDelete, onRetry }) {
   return (
-    <Box sx={{ mt: 2, width: '100%' }}>
-      <Grid container spacing={2} alignItems="center">
-        <Grid item xs={12} sx={{width:"100%"}}>
-          <FormControl fullWidth>
-            <Select
-              multiple
-              value={selectedImageNames}
-              renderValue={() => 'Select Images'}
-              sx={{
-                height: 36,
-                px: 2,
-                fontSize: '0.85rem',
-                width: '100%',
-                minHeight: 'unset',
-              }}
-            >
-              {allImages.map(img => (
-                <MenuItem key={img.file.name} value={img.file.name}>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={selectedImageNames.includes(img.file.name)}
-                        onChange={() => handleToggleImage(img.file.name)}
-                      />
-                    }
-                    label={img.file.name}
-                  />
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-
-        <Grid item xs={12} md={6} sx={{width:"100%"}}>
-          <Box display="flex" justifyContent="center">
-            <Button
-              variant="outlined"
-              onClick={() => setOpenDialog(true)}
-              sx={{
-                height: 36,
-                px: 2,
-                fontSize: '0.85rem',
-                width: '100%',
-                minHeight: 'unset',
-              }}
-            >
-              Save Preset
-            </Button>
-          </Box>
-        </Grid>
-
-        <Grid item xs={12} md={6} sx={{width:"100%"}}>
-          <FormControl fullWidth>
-            <Select
-              displayEmpty
-              value=""
-              renderValue={() => 'Select a Preset'}
-              sx={{
-                height: 36,
-                px: 2,
-                fontSize: '0.85rem',
-                width: '100%',
-                minHeight: 'unset',
-              }}
-            >
-              {presets.map(name => (
-                <MenuItem
-                  key={name}
-                  value={name}
-                  onClick={() => handlePresetClick(name)}
-                  sx={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}
-                >
-                  <span>{name}</span>
-                  <IconButton
-                    size="small"
-                    aria-label={`Delete preset ${name}`}
-                    onClick={async (e) => {
-                      e.stopPropagation();
-                      try {
-                        await fetch(`${API_BASE}/api/delete-preset`, {
-                          method: 'DELETE',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ email, presetName: name }),
-                        });
-                        setPresets(prev => prev.filter(p => p !== name));
-                      } catch (err) {
-                        setPresetError('Could not delete the preset. Please try again.');
-                      }
-                    }}
-                  >
-                    <DeleteIcon fontSize="small" />
-                  </IconButton>
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      </Grid>
-
-
-      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
-        <DialogTitle>Save New Preset</DialogTitle>
-        <DialogContent>
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Preset Name"
-            fullWidth
-            value={presetName}
-            onChange={(e) => setPresetName(e.target.value)}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Cancel</Button>
-          <Button onClick={handleSavePreset}>Save</Button>
-        </DialogActions>
-      </Dialog>
-
-      <Snackbar
-        open={Boolean(presetError)}
-        autoHideDuration={6000}
-        onClose={() => setPresetError('')}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+    <Box component="section" aria-labelledby="saved-slideshows-heading">
+      <Typography
+        id="saved-slideshows-heading"
+        component="h2"
+        sx={{ px: 1.5, mb: 0.5, fontSize: '0.8125rem', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: tokens.textSecondary }}
       >
-        <Alert severity="error" variant="filled" onClose={() => setPresetError('')}>
-          {presetError}
-        </Alert>
-      </Snackbar>
-    </Box >
+        Saved slideshows
+      </Typography>
+      {loading && presets.length === 0 ? (
+        <Box sx={{ px: 1.5, py: 1 }}><CircularProgress size={18} aria-label="Loading saved slideshows" /></Box>
+      ) : error && presets.length === 0 ? (
+        <Box sx={{ px: 1.5 }}>
+          <Typography variant="body2" color="text.secondary">{error}</Typography>
+          <Button size="small" onClick={onRetry} sx={{ mt: 0.5, px: 0 }}>Retry</Button>
+        </Box>
+      ) : presets.length === 0 ? (
+        <Typography variant="body2" color="text.secondary" sx={{ px: 1.5 }}>
+          Choose <strong>Select</strong> above the photos to save a slideshow.
+        </Typography>
+      ) : (
+        <Box component="ul" sx={{ listStyle: 'none', m: 0, p: 0 }}>
+          {presets.map((name) => {
+            const active = name === activeName;
+            return (
+              <Box component="li" key={name} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Box
+                  component="button"
+                  type="button"
+                  onClick={() => onApply(name)}
+                  aria-pressed={active}
+                  sx={rowSx(active)}
+                >
+                  <SlideshowOutlinedIcon fontSize="small" sx={{ color: active ? tokens.accent : tokens.textSecondary }} />
+                  <Box component="span" sx={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {name}
+                  </Box>
+                </Box>
+                <Tooltip title="Delete saved slideshow">
+                  <IconButton
+                    aria-label={`Delete saved slideshow ${name}`}
+                    onClick={() => onRequestDelete(name)}
+                    size="small"
+                    sx={{ width: 36, height: 36, color: tokens.textSecondary }}
+                  >
+                    <DeleteOutlineIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            );
+          })}
+        </Box>
+      )}
+    </Box>
+  );
+}
 
+/** Name dialog shown from the selection bar. Closes only after the API confirms the save. */
+export function SaveSlideshowDialog({ open, count, existingNames, onSave, onClose }) {
+  const [name, setName] = useState('');
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (open) {
+      setError('');
+      setPending(false);
+    }
+  }, [open]);
+
+  const trimmed = name.trim();
+  const duplicate = existingNames.some((n) => n.toLocaleLowerCase() === trimmed.toLocaleLowerCase());
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!trimmed || duplicate || pending) return;
+    setPending(true);
+    setError('');
+    try {
+      await onSave(trimmed);
+      setName('');
+      setPending(false);
+      onClose();
+    } catch (err) {
+      // Keep the dialog and the typed name so nothing is lost.
+      setPending(false);
+      setError(err.message);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onClose={pending ? undefined : onClose}
+      maxWidth="xs"
+      fullWidth
+      aria-labelledby="save-slideshow-title"
+      slotProps={{ paper: { component: 'form', onSubmit: handleSubmit, noValidate: true } }}
+    >
+      <DialogTitle id="save-slideshow-title">Save slideshow</DialogTitle>
+      <DialogContent>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Saves the {count} selected {count === 1 ? 'photo' : 'photos'} so you can play them together later.
+        </Typography>
+        <TextField
+          autoFocus
+          label="Slideshow name"
+          fullWidth
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={pending}
+          error={duplicate}
+          helperText={duplicate ? 'You already have a saved slideshow with this name.' : ' '}
+          slotProps={{ htmlInput: { maxLength: 80 } }}
+        />
+        {error && <Alert severity="error" sx={{ mt: 1 }}>{error}</Alert>}
+      </DialogContent>
+      <DialogActions sx={{ px: 3, pb: 2.5 }}>
+        <Button onClick={onClose} disabled={pending}>Cancel</Button>
+        <Button
+          type="submit"
+          variant="contained"
+          disabled={!trimmed || duplicate || pending}
+          startIcon={pending ? <CircularProgress size={16} color="inherit" /> : null}
+        >
+          {pending ? 'Saving…' : 'Save slideshow'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 }

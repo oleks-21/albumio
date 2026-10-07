@@ -1,155 +1,303 @@
-.album-carousel {
-  padding: 0.5rem;
+/* Library (/album_display) — selectors scoped to .library */
+
+.library {
+  display: block;
 }
 
-/* Container around the image list */
-.album-images {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-}
-
-/* Scale down images on small screens so they match menu width */
-@media (max-width: 768px) {
-  .album-images {
-    width: 20em;         /* match .menu-container */
-    max-width: 100%;     /* ensure it still shrinks further if needed */
-    margin: 0 auto;      /* keep centered */
+@media (min-width: 1024px) {
+  .library {
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
   }
 }
 
-/* Ensure images scale properly inside */
-.album-images .MuiImageListItem-root {
-  position: relative;
-  width: 100% !important;
-  height: 200px !important;   /* fixed height */
-  border-radius: 10px;
-  overflow: hidden;
-  background-color: #111827;  /* gray-900 backing behind letterboxed images */
-  border: 1px solid #1f2937;  /* gray-800 hairline */
-  display: flex;
-  justify-content: center;
-  align-items: center;
+.library-sidebar {
+  display: none;
 }
 
-.album-images img {
+@media (min-width: 1024px) {
+  .library-sidebar {
+    display: block;
+    position: sticky;
+    top: var(--header-height);
+    align-self: start;
+    height: calc(100vh - var(--header-height));
+    overflow-y: auto;
+    padding: 24px 12px 32px 16px;
+    border-right: 1px solid var(--color-border);
+  }
+}
+
+.library-main {
+  min-width: 0;
+  padding: 16px 16px 120px;
+  container-type: inline-size;
+}
+
+@media (min-width: 600px) {
+  .library-main { padding: 24px 24px 120px; }
+}
+
+@media (min-width: 1280px) {
+  .library-main { padding: 24px 32px 120px; }
+}
+
+/* Grid: columns follow the available content width, not the viewport */
+.library-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@container (max-width: 279px) {
+  .library-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+@container (min-width: 680px) {
+  .library-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+}
+
+@container (min-width: 1000px) {
+  .library-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+}
+
+/* Photo card */
+.photo-card {
+  min-width: 0;
+}
+
+.photo-card__frame {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  background: var(--color-surface-subtle);
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  transition: outline-color 0.15s ease;
+}
+
+.photo-card.is-selected .photo-card__frame {
+  outline-color: var(--color-accent);
+}
+
+.photo-card__open {
+  all: unset;
+  box-sizing: border-box;
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  display: block;
+  border-radius: inherit;
+}
+
+.photo-card__open:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: -3px;
+}
+
+.photo-card__open img {
   width: 100%;
   height: 100%;
-  object-fit: contain;   /* ✅ scales entire image, no crop */
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.3s ease;
+}
+
+.library-grid.is-fit .photo-card__open img {
+  object-fit: contain;
+}
+
+.library-grid.is-fit .photo-card__frame {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.photo-card__open img.is-loaded {
+  opacity: 1;
+}
+
+@media (hover: hover) {
+  .photo-card:not(.is-selecting) .photo-card__open:hover img.is-loaded {
+    transform: scale(1.02);
+  }
+}
+
+.photo-card.is-selected .photo-card__open img {
+  transform: scale(0.94);
   border-radius: 8px;
 }
 
-/* Tabs bar stays full width */
-.tabs-container {
-  width: 100%;
+.photo-card__skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, var(--color-surface-subtle) 30%, #F3F1EC 50%, var(--color-surface-subtle) 70%);
+  background-size: 200% 100%;
+  animation: photo-card-shimmer 1.4s linear infinite;
 }
 
-/* Menu wrapper takes full width and centers the fixed menu box */
-.menu-container {
-  display: flex;
-  justify-content: center;  /* ✅ centers horizontally */
-  align-items: center;      /* optional: vertical centering within its 150px height */
-  min-height: 175px;
+@keyframes photo-card-shimmer {
+  to { background-position: -200% 0; }
 }
 
-.menu-container.top-align {
+.photo-card__failed {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; /* aligns content to top */
-  align-items: center; /* or flex-start if you want left alignment */
-  width: 100%;
-}
-
-/* The inner menu box (FileSelect, CollectionDisplay, Preset) */
-.menu-box {
-  width: 20em;       /* fixed width */
-  max-width: 100%;   /* don’t overflow on small screens */
-}
-
-.react-multi-carousel-track {
-  float: left !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
-
-.carousel-item {
-  display: flex;
-  justify-content: center;
   align-items: center;
-  margin-right: 1rem;
-}
-.MuiImageListItem-standard{
-  width: 12em !important;
-  height:24vh !important;
-}
-/* Remove margin after last item */
-.carousel-item:last-child {
-  margin-right: 0;
-}
-
-.image-container {
-  position: relative;
-  display: inline-block;
-}
-
-.image-container img {
-  position: relative;
-  display: block;
-}
-.preview-button {
-  position: absolute !important;
-  top: 8px;
-  right: 20px;
-  z-index: 1;
-  min-width: 32px;
-  padding: 4px;
-}
-.top-right-buttons {
-  position: absolute !important;
-  top: 8px;
-  right: 8px;
-  z-index: 1;
-  min-width: 32px;
-  padding: 4px;
-}
-#slideshowButton{
-  display: block;
-  width: fit-content;
-  margin: 3em auto 0;
-  background-image: linear-gradient(to top, #4f46e5, #6366f1);
-  background-size: 100% 100%;
-  background-position: bottom;
-  box-shadow: inset 0px 1px 0px 0px rgba(255, 255, 255, 0.16);
-  transition: background-size 0.2s ease;
-}
-#slideshowButton:hover{
-  background-image: linear-gradient(to top, #4f46e5, #6366f1);
-  background-size: 100% 150%;
-}
-.image-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  display: none;
-  width: 100%;
-  height: 100%;
-  background: rgba(0,0,0,0.5);
-  color: white;
-  font-size: 1rem;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 8px 44px;
+  color: var(--color-text-secondary);
+  font-size: 14px;
   text-align: center;
-  line-height: 200px;
-  cursor: pointer;
-  transition: opacity 0.3s ease;
-  border-radius: 8px;
 }
-.image-container:hover .image-overlay {
+
+.photo-card__retry.MuiButton-root {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  min-height: 32px;
+}
+
+/* Overlay controls: select (top-left) and more (top-right) */
+.photo-card__select.MuiIconButton-root,
+.photo-card__more.MuiIconButton-root {
+  position: absolute;
+  top: 6px;
+  width: 36px;
+  height: 36px;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  transition: opacity 0.15s ease;
+}
+
+.photo-card__select.MuiIconButton-root:hover,
+.photo-card__more.MuiIconButton-root:hover {
+  background: #fff;
+}
+
+.photo-card__select.MuiIconButton-root { left: 6px; }
+.photo-card__more.MuiIconButton-root { right: 6px; }
+
+/* Desktop: reveal secondary controls on hover/focus. Touch: always visible. */
+@media (hover: hover) {
+  .photo-card__select.MuiIconButton-root,
+  .photo-card__more.MuiIconButton-root {
+    opacity: 0;
+  }
+  .photo-card__frame:hover .photo-card__select,
+  .photo-card__frame:hover .photo-card__more,
+  .photo-card__frame:focus-within .photo-card__select,
+  .photo-card__frame:focus-within .photo-card__more,
+  .photo-card__more[aria-expanded='true'] {
+    opacity: 1;
+  }
+}
+
+@media (hover: none) {
+  .photo-card__select.MuiIconButton-root { display: none; }
+}
+
+.photo-card__check {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--color-text-secondary);
+  background: #fff;
+  color: #fff;
+  box-sizing: border-box;
+}
+
+.photo-card__open .photo-card__check {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 24px;
+  height: 24px;
+  border-color: #fff;
+  background: rgba(32, 39, 35, 0.35);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.photo-card.is-selected .photo-card__open .photo-card__check {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.photo-card__meta {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 2px 0;
+  min-width: 0;
+}
+
+.photo-card__name,
+.photo-card__collection {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photo-card__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.photo-card__collection {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.photo-card__line {
   display: block;
+  height: 12px;
+  width: 70%;
+  margin-top: 4px;
+  border-radius: 4px;
+  background: var(--color-surface-subtle);
 }
-#deleteButton{
-  background :rgba(255, 0, 0, 0.7);
+
+.photo-card__line.short { width: 40%; }
+
+.photo-card.is-placeholder .photo-card__frame { background: transparent; }
+
+/* Empty / error / no-results */
+.library-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  padding: 64px 16px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
 }
-#deleteButton:hover{
-  background :rgb(185, 0, 0);
+
+/* Contextual selection bar */
+.selection-bar {
+  position: sticky;
+  bottom: 16px;
+  z-index: 5;
+  margin-top: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px 10px 20px;
+  border-radius: var(--radius-card);
+  background: var(--color-viewer-bg);
+  color: var(--color-viewer-text);
+  box-shadow: 0 10px 30px rgba(21, 25, 24, 0.3);
 }
