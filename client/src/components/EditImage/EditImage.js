@@ -73,6 +73,12 @@ export default function EditImage() {
   const [saveError, setSaveError] = useState('');
   const email = useSelector(state => state.user.email);
 
+  // Open at the top: the router keeps the library's scroll position, which on
+  // phones left the photo scrolled out of view.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     if (canvasRef.current) {
       const ctx = canvasRef.current.getContext("2d");
