@@ -26,6 +26,7 @@
 
 .home-hero__art {
   position: relative;
+  isolation: isolate;
   aspect-ratio: 5 / 4;
   width: 100%;
   max-width: 640px;
@@ -38,12 +39,36 @@
   }
 }
 
+/* Soft light-blue and turquoise shapes behind the photo frames */
+.home-hero__art::before,
+.home-hero__art::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  border-radius: 32px;
+}
+
+.home-hero__art::before {
+  inset: 14% 6% -2% 14%;
+  background: var(--color-sky);
+  transform: rotate(3deg);
+}
+
+.home-hero__art::after {
+  width: 22%;
+  aspect-ratio: 1;
+  left: -3%;
+  top: 2%;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-accent-bright) 35%, transparent);
+}
+
 .home-frame {
   position: absolute;
   background: var(--color-surface);
   padding: 8px;
   border-radius: var(--radius-card);
-  box-shadow: 0 1px 2px rgba(32, 39, 35, 0.08), 0 12px 32px rgba(32, 39, 35, 0.14);
+  box-shadow: 0 1px 2px rgba(var(--shadow-rgb), 0.08), 0 12px 32px rgba(var(--shadow-rgb), 0.16);
 }
 
 .home-frame img {
@@ -94,7 +119,7 @@
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text);
-  box-shadow: 0 6px 18px rgba(32, 39, 35, 0.12);
+  box-shadow: 0 6px 18px rgba(var(--shadow-rgb), 0.14);
 }
 
 .home-hero__label-dot {

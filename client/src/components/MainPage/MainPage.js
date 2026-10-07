@@ -14,6 +14,9 @@ import BrandMark from '../common/BrandMark';
 
 const IMG = `${process.env.PUBLIC_URL}/images`;
 
+// White button on the turquoise-to-blue band, in both color schemes.
+const ctaButtonSx = { flexShrink: 0, bgcolor: '#FFFFFF', color: '#0E2A35', '&:hover': { bgcolor: '#EAF6FD' } };
+
 const STEPS = [
   {
     title: 'Add photos',
@@ -68,7 +71,7 @@ export default function MainPage({ onOpenAuth }) {
   return (
     <div className="home">
       {/* Hero */}
-      <Box component="section" aria-labelledby="home-title" sx={{ pt: { xs: 3, md: 8 }, pb: { xs: 7, md: 12 } }}>
+      <Box component="section" aria-labelledby="home-title" sx={{ pt: { xs: 3, md: 8 }, pb: { xs: 7, md: 12 }, background: `linear-gradient(180deg, ${tokens.skySoft} 0%, ${tokens.page} 100%)` }}>
         <SectionContainer>
           <div className="home-hero">
             <div className="home-hero__copy">
@@ -199,8 +202,8 @@ export default function MainPage({ onOpenAuth }) {
         <SectionContainer>
           <Box
             sx={{
-              backgroundColor: tokens.viewerBg,
-              color: tokens.viewerText,
+              background: `linear-gradient(120deg, ${tokens.bandStart} 0%, ${tokens.bandEnd} 100%)`,
+              color: '#FFFFFF',
               borderRadius: 4,
               px: { xs: 3, md: 8 },
               py: { xs: 5, md: 7 },
@@ -215,18 +218,18 @@ export default function MainPage({ onOpenAuth }) {
               <Typography id="cta-title" variant="h2" sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, mb: 1 }}>
                 {isLoggedIn ? 'Your library is waiting.' : 'Start your gallery today.'}
               </Typography>
-              <Typography sx={{ color: tokens.viewerTextSecondary }}>
+              <Typography sx={{ color: 'rgba(255, 255, 255, 0.88)' }}>
                 {isLoggedIn
                   ? 'Pick up where you left off with your collections and saved slideshows.'
                   : 'Create an account, add a few photos, and play them back tonight.'}
               </Typography>
             </Box>
             {isLoggedIn ? (
-              <Button variant="contained" size="large" component={RouterLink} to="/album_display" sx={{ flexShrink: 0, bgcolor: tokens.page, color: tokens.text, '&:hover': { bgcolor: '#FFFFFF' } }}>
+              <Button variant="contained" size="large" component={RouterLink} to="/album_display" sx={ctaButtonSx}>
                 Open your library
               </Button>
             ) : (
-              <Button variant="contained" size="large" onClick={() => onOpenAuth?.('register')} sx={{ flexShrink: 0, bgcolor: tokens.page, color: tokens.text, '&:hover': { bgcolor: '#FFFFFF' } }}>
+              <Button variant="contained" size="large" onClick={() => onOpenAuth?.('register')} sx={ctaButtonSx}>
                 Create your gallery
               </Button>
             )}

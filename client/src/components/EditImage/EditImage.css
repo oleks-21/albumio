@@ -78,8 +78,8 @@
 .editor__crop {
   position: absolute;
   border: 2px dashed var(--color-accent);
-  background-color: rgba(36, 102, 83, 0.14);
-  box-shadow: 0 0 0 9999px rgba(21, 25, 24, 0.35);
+  background-color: color-mix(in srgb, var(--color-accent) 16%, transparent);
+  box-shadow: 0 0 0 9999px rgba(8, 20, 25, 0.4);
   pointer-events: none;
 }
 

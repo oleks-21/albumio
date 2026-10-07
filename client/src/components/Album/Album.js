@@ -22,7 +22,7 @@ import CollectionDisplay, { collectionCounts, collectionLabel } from '../Collect
 import SavedSlideshowList, { SaveSlideshowDialog } from '../Preset/Preset';
 import usePresets from '../Preset/usePresets';
 import ConfirmDialog from '../common/ConfirmDialog';
-import { tokens } from '../../theme';
+import { tokens, palettes } from '../../theme';
 
 const compareNames = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true });
 
@@ -338,7 +338,7 @@ export default function Album() {
               variant="contained"
               onClick={() => setSaveOpen(true)}
               disabled={selectedNames.length === 0}
-              sx={{ bgcolor: tokens.page, color: tokens.text, '&:hover': { bgcolor: '#fff' }, '&.Mui-disabled': { bgcolor: 'rgba(246,244,239,0.3)', color: 'rgba(32,39,35,0.6)' } }}
+              sx={{ bgcolor: palettes.viewer.accent, color: palettes.viewer.bg, '&:hover': { bgcolor: '#8BE6E8' }, '&.Mui-disabled': { bgcolor: 'rgba(234, 247, 248, 0.2)', color: 'rgba(234, 247, 248, 0.55)' } }}
             >
               Save slideshow
             </Button>

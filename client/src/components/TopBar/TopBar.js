@@ -100,7 +100,7 @@ export default function TopBar({ onOpenAuth }) {
         color="inherit"
         component="header"
         sx={{
-          backgroundColor: 'rgba(246, 244, 239, 0.94)',
+          backgroundColor: tokens.headerBg,
           backdropFilter: 'saturate(1.4) blur(8px)',
           WebkitBackdropFilter: 'saturate(1.4) blur(8px)',
           borderBottom: `1px solid ${tokens.border}`,

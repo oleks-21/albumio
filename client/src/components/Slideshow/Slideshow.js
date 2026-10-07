@@ -148,7 +148,7 @@ export default function Slideshow({ images, scopeLabel = 'all photos', onClose }
         onClose={onClose}
         onKeyDown={handleKeyDown}
         aria-label={`Slideshow: ${scopeLabel}`}
-        slotProps={{ paper: { sx: { bgcolor: '#0B0D0C', color: tokens.viewerText } } }}
+        slotProps={{ paper: { sx: { bgcolor: tokens.viewerBg, color: tokens.viewerText } } }}
       >
         <div
           ref={rootRef}

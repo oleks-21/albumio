@@ -39,7 +39,7 @@
 }
 
 .upload-item.is-failed {
-  border-color: rgba(180, 35, 24, 0.4);
+  border-color: color-mix(in srgb, var(--color-destructive) 45%, transparent);
 }
 
 .upload-item img {
@@ -77,7 +77,7 @@
 }
 
 .upload-item__warn {
-  color: #8A5A00;
+  color: var(--color-warn);
 }
 
 .upload-item__status {

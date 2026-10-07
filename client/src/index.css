@@ -1,17 +1,68 @@
-/* Semantic tokens — mirror of src/theme.js `tokens`. */
-:root {
-  --color-page: #F6F4EF;
+/* Semantic tokens — mirror of `palettes` in src/theme.js. The scheme is
+   chosen by the data-theme attribute that MUI's color-scheme manager (and the
+   inline script in public/index.html) sets on <html>. */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+  --color-page: #F2FAFB;
   --color-surface: #FFFFFF;
-  --color-surface-subtle: #ECE9E2;
-  --color-text: #202723;
-  --color-text-secondary: #5D665F;
-  --color-accent: #246653;
-  --color-accent-hover: #194B3D;
-  --color-selected: #E5EFE9;
-  --color-border: #D8DDD5;
-  --color-viewer-bg: #151918;
-  --color-viewer-text: #F6F4EF;
+  --color-surface-subtle: #E2F2F5;
+  --color-text: #0E2A35;
+  --color-text-secondary: #46646F;
+  --color-accent: #0A7782;
+  --color-accent-hover: #075C65;
+  --color-accent-bright: #22BFC4;
+  --color-on-accent: #FFFFFF;
+  --color-sky: #CFEAFB;
+  --color-sky-soft: #EAF6FD;
+  --color-selected: #DCF2F3;
+  --color-border: #CBE1E7;
   --color-destructive: #B42318;
+  --color-warn: #8A5A00;
+
+  --color-header-bg: rgba(242, 250, 251, 0.92);
+  --color-overlay-control: rgba(255, 255, 255, 0.92);
+  --color-overlay-control-hover: #FFFFFF;
+  --color-shimmer: #F1F9FB;
+  --color-band-start: #0A7782;
+  --color-band-end: #1E6FA8;
+  --shadow-rgb: 14, 42, 53;
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-page: #0A161C;
+  --color-surface: #10222A;
+  --color-surface-subtle: #183139;
+  --color-text: #E4F4F6;
+  --color-text-secondary: #9DBBC3;
+  --color-accent: #3ECFD3;
+  --color-accent-hover: #76E0E3;
+  --color-accent-bright: #3ECFD3;
+  --color-on-accent: #032429;
+  --color-sky: #123A52;
+  --color-sky-soft: #0E2532;
+  --color-selected: #103B42;
+  --color-border: #24424C;
+  --color-destructive: #FF8A80;
+  --color-warn: #F2C46B;
+
+  --color-header-bg: rgba(10, 22, 28, 0.9);
+  --color-overlay-control: rgba(16, 34, 42, 0.92);
+  --color-overlay-control-hover: #183139;
+  --color-shimmer: #1F3C46;
+  --color-band-start: #0D5B66;
+  --color-band-end: #173F66;
+  --shadow-rgb: 0, 0, 0;
+}
+
+/* Scheme-independent */
+:root {
+  --color-viewer-bg: #081419;
+  --color-viewer-surface: #0F232B;
+  --color-viewer-text: #EAF7F8;
+  --color-viewer-text-secondary: #A6C2C9;
+  --color-viewer-line: rgba(234, 247, 248, 0.12);
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-serif: Georgia, 'Times New Roman', serif;

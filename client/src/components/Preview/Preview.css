@@ -11,7 +11,7 @@
   align-items: center;
   gap: 16px;
   padding: 8px 8px 8px 20px;
-  border-bottom: 1px solid rgba(246, 244, 239, 0.12);
+  border-bottom: 1px solid var(--color-viewer-line);
   flex-shrink: 0;
 }
 
@@ -77,7 +77,7 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  color: #B9C0BA;
+  color: var(--color-viewer-text-secondary);
 }
 
 .preview__nav.MuiIconButton-root {
@@ -86,17 +86,17 @@
   transform: translateY(-50%);
   width: 48px;
   height: 48px;
-  color: #F6F4EF;
-  background: rgba(21, 25, 24, 0.6);
+  color: var(--color-viewer-text);
+  background: rgba(8, 20, 25, 0.6);
 }
 
 .preview__nav.MuiIconButton-root:hover {
-  background: rgba(21, 25, 24, 0.85);
+  background: rgba(8, 20, 25, 0.85);
 }
 
 @media (min-width: 900px) {
-  .preview__nav.MuiIconButton-root { background: rgba(246, 244, 239, 0.1); }
-  .preview__nav.MuiIconButton-root:hover { background: rgba(246, 244, 239, 0.2); }
+  .preview__nav.MuiIconButton-root { background: rgba(234, 247, 248, 0.1); }
+  .preview__nav.MuiIconButton-root:hover { background: rgba(234, 247, 248, 0.2); }
 }
 
 .preview__nav--prev.MuiIconButton-root { left: 4px; }
@@ -109,13 +109,13 @@
 
 .preview__details {
   padding: 16px 20px 32px;
-  border-top: 1px solid rgba(246, 244, 239, 0.12);
+  border-top: 1px solid var(--color-viewer-line);
 }
 
 @media (min-width: 900px) {
   .preview__details {
     border-top: 0;
-    border-left: 1px solid rgba(246, 244, 239, 0.12);
+    border-left: 1px solid var(--color-viewer-line);
     padding: 24px;
     overflow-y: auto;
   }

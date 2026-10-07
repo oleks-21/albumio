@@ -16,7 +16,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import BrokenImageOutlinedIcon from '@mui/icons-material/BrokenImageOutlined';
-import { viewerTheme, tokens } from '../../theme';
+import { viewerTheme, tokens, palettes } from '../../theme';
 import useImageStatus from '../common/useImageStatus';
 import './Preview.css';
 
@@ -25,7 +25,7 @@ const isTyping = (el) => el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAR
 /** Inline status line under a field: pending / success / error. */
 function FieldStatus({ state }) {
   if (!state || state.status === 'idle') return null;
-  const color = state.status === 'error' ? '#F97066' : state.status === 'success' ? '#7CC4AC' : tokens.viewerTextSecondary;
+  const color = state.status === 'error' ? '#F97066' : state.status === 'success' ? palettes.viewer.accent : tokens.viewerTextSecondary;
   return (
     <Typography variant="body2" role={state.status === 'error' ? 'alert' : 'status'} sx={{ color, mt: 0.75 }}>
       {state.status === 'pending' ? 'Saving…' : state.message}

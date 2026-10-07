@@ -115,7 +115,7 @@ export default function CollectionDisplay({ collections, totalCount, selectedCol
                       borderRadius: '4px',
                       border: `1.5px solid ${checked ? tokens.accent : tokens.textSecondary}`,
                       backgroundColor: checked ? tokens.accent : 'transparent',
-                      color: '#fff',
+                      color: tokens.onAccent,
                     }}
                   >
                     {checked && <CheckIcon sx={{ fontSize: 14 }} />}

@@ -5,10 +5,11 @@ import { tokens, fonts } from '../../theme';
 export function FrameMark({ size = 28 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-      <rect x="3" y="7" width="18" height="18" rx="3" fill={tokens.surface} stroke={tokens.text} strokeWidth="2" transform="rotate(-8 12 16)" />
-      <rect x="11" y="6" width="18" height="18" rx="3" fill={tokens.accent} />
-      <path d="M13.5 20.5l4.5-5 3 3.2 2-2.2 3.5 4z" fill={tokens.page} />
-      <circle cx="23.5" cy="10.5" r="1.8" fill={tokens.page} />
+      {/* style (not fill/stroke attributes) so the CSS-variable colors resolve */}
+      <rect x="3" y="7" width="18" height="18" rx="3" strokeWidth="2" transform="rotate(-8 12 16)" style={{ fill: tokens.sky, stroke: tokens.text }} />
+      <rect x="11" y="6" width="18" height="18" rx="3" style={{ fill: tokens.accent }} />
+      <path d="M13.5 20.5l4.5-5 3 3.2 2-2.2 3.5 4z" style={{ fill: tokens.onAccent }} />
+      <circle cx="23.5" cy="10.5" r="1.8" style={{ fill: tokens.onAccent }} />
     </svg>
   );
 }
