@@ -2,8 +2,9 @@ import Box from '@mui/material/Box';
 import useScrollReveal from './useScrollReveal';
 
 /*
- * Wraps children in a fade-up-on-scroll reveal (translateY + opacity),
- * matching the reference template's AOS "fade-up" with staggered delay.
+ * Subtle fade-up when content first scrolls into view. Users who prefer
+ * reduced motion get the content immediately with no transition (handled in
+ * useScrollReveal and the media query below).
  */
 export default function Reveal({ children, delay = 0, sx = {}, ...rest }) {
   const [ref, visible] = useScrollReveal();
@@ -13,9 +14,14 @@ export default function Reveal({ children, delay = 0, sx = {}, ...rest }) {
       ref={ref}
       sx={{
         opacity: visible ? 1 : 0,
-        transform: visible ? 'translateY(0)' : 'translateY(10px)',
-        transition: 'opacity 0.6s ease, transform 0.6s ease',
+        transform: visible ? 'none' : 'translateY(8px)',
+        transition: 'opacity 0.5s ease, transform 0.5s ease',
         transitionDelay: `${delay}ms`,
+        '@media (prefers-reduced-motion: reduce)': {
+          opacity: 1,
+          transform: 'none',
+          transition: 'none',
+        },
         ...sx,
       }}
       {...rest}

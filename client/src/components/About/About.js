@@ -1,37 +1,34 @@
-import React from "react";
+import { Link as RouterLink } from 'react-router-dom';
+import Button from '@mui/material/Button';
 import "./About.css";
 
 export default function About() {
   return (
-    <div className="about-container">
-      <div className="about-card">
-        <h1 className="about-title">About This Project</h1>
-        <p className="about-text">
-          This project is a simple image management and slideshow application.
-          It allows users to select, save, and organize images into presets,
-          and view them in a fullscreen slideshow with smooth transitions.
+    <div className="about">
+      <article className="about__card">
+        <h1 className="about__title">About Albumio</h1>
+        <p>
+          Albumio is a small personal photo gallery. Upload photos into named
+          collections, browse and search them, and play any selection back as a
+          slideshow.
         </p>
-
-        <p className="about-text">
-          The app is built with <strong>React</strong> and <strong>Material-UI</strong> for 
-          a modern responsive design, with Google Sheets integration to store
-          presets and ImageKit for image handling.
-        </p>
-
-        <p className="about-text">
-          Features include:
-        </p>
-        <ul className="about-list">
-          <li>Preset creation and management</li>
-          <li>Image selection and organization</li>
-          <li>Fullscreen slideshow with auto-play</li>
-          <li>Smooth fade-in/fade-out controls</li>
+        <h2 className="about__subtitle">What you can do</h2>
+        <ul>
+          <li>Upload photos and group them into collections</li>
+          <li>Search, sort and filter your library by collection</li>
+          <li>Rename photos and move them between collections</li>
+          <li>Draw on, crop and adjust the color of a photo</li>
+          <li>Save a selection of photos as a slideshow and play it full screen</li>
         </ul>
-
-        <p className="about-footer">
-          Developed by in {new Date().getFullYear()}
+        <h2 className="about__subtitle">How it’s built</h2>
+        <p>
+          The app is built with React and Material UI. Photos are stored with
+          ImageKit, and account and saved-slideshow data is kept in Google Sheets.
         </p>
-      </div>
+        <Button variant="contained" component={RouterLink} to="/" sx={{ mt: 2 }}>
+          Back to home
+        </Button>
+      </article>
     </div>
   );
 }

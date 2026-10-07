@@ -1,64 +1,57 @@
 import { API_BASE } from '../../api';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemText from '@mui/material/ListItemText';
-import { useSelector, useDispatch } from 'react-redux';
-import { logout } from '../../store/store';
-import { useLocation, useNavigate } from 'react-router-dom';
-import Login from '../Login/Login';
+import Divider from '@mui/material/Divider';
+import Avatar from '@mui/material/Avatar';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import MoreVertIcon from '@mui/icons-material/MoreVert'; // ⋮ icon
-import useMediaQuery from '@mui/material/useMediaQuery';
-import { useTheme } from '@mui/material/styles';
-import { tokens, gradients, hairlineBorder } from '../../theme';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import LogoutIcon from '@mui/icons-material/Logout';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import { useSelector, useDispatch } from 'react-redux';
+import { logout } from '../../store/store';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
+import { tokens, HEADER_HEIGHT } from '../../theme';
+import BrandMark from '../common/BrandMark';
 
-const hairlineBefore = hairlineBorder;
+const LIBRARY_PATH = '/album_display';
 
-// Secondary (dark) button treatment
-const darkButtonSx = {
-  position: 'relative',
-  color: tokens.gray300,
-  backgroundImage: gradients.darkButton,
-  fontSize: 13,
-  px: 1.75,
-  py: 0.5,
-  '&::before': hairlineBefore,
-  '&:hover': { backgroundImage: gradients.darkButton },
-};
+const navLinkSx = (active) => ({
+  color: active ? tokens.text : tokens.textSecondary,
+  fontWeight: active ? 600 : 500,
+  px: 1.5,
+  minHeight: 44,
+  borderRadius: 1,
+  '&:hover': { color: tokens.text, backgroundColor: tokens.surfaceSubtle },
+});
 
-export default function TopBar() {
+export default function TopBar({ onOpenAuth }) {
   const email = useSelector(state => state.user.email);
   const isLoggedIn = useSelector(state => state.user.isLoggedIn);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const isMobile = useMediaQuery(useTheme().breakpoints.down('sm'));
   const [name, setName] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [anchorEl, setAnchorEl] = useState(null);
+  const [accountAnchor, setAccountAnchor] = useState(null);
 
   useEffect(() => {
     const fetchName = async () => {
       try {
-        const response = await fetch(`${API_BASE}/api/user-name?email=${email}`);
+        const response = await fetch(`${API_BASE}/api/user-name?email=${encodeURIComponent(email)}`);
         const data = await response.json();
-        if (response.ok) {
-          setName(data.name);
-        } else {
-          console.warn(data.error);
-          setName(email);
-        }
+        setName(response.ok && data.name ? data.name : email);
       } catch (err) {
-        console.error('Error fetching name:', err);
         setName(email);
       }
     };
@@ -68,198 +61,215 @@ export default function TopBar() {
     }
   }, [isLoggedIn, email]);
 
+  const displayName = name || email;
+  const onLibrary = location.pathname === LIBRARY_PATH;
+  // Workspace pages use the full window width; marketing pages are centered.
+  const wide = onLibrary || location.pathname === '/edit';
+
   const handleLogout = () => {
+    setAccountAnchor(null);
+    setDrawerOpen(false);
     dispatch(logout());
-    navigate("/");
+    navigate('/');
   };
 
-  const [open, setOpen] = useState(false);
-  const [register, setRegister] = useState(false);
+  // Close any open menu before showing the auth dialog so it never sits on top.
+  const openAuth = (mode) => {
+    setAccountAnchor(null);
+    setDrawerOpen(false);
+    onOpenAuth?.(mode);
+  };
 
-  const handleOpen = () => {
-    setOpen(true);
-    setRegister(false);
-  };
-  const handleOpenRegister = () => {
-    setOpen(true);
-    setRegister(true);
-  };
-  const handleClose = () => setOpen(false);
+  const links = isLoggedIn
+    ? [
+        { label: 'Home', to: '/' },
+        { label: 'My library', to: LIBRARY_PATH },
+        { label: 'About', to: '/about' },
+      ]
+    : [
+        { label: 'How it works', to: { pathname: '/', hash: '#how-it-works' } },
+        { label: 'About', to: '/about' },
+      ];
+  const isActive = (to) => typeof to === 'string' && location.pathname === to;
 
   return (
     <>
       <AppBar
         position="fixed"
         elevation={0}
+        color="inherit"
+        component="header"
         sx={{
-          backgroundColor: 'rgba(17, 24, 39, 0.9)',
-          backgroundImage: 'none',
-          boxShadow: 'none',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          borderBottom: '1px solid',
-          borderImageSource: gradients.hairline,
-          borderImageSlice: 1,
+          backgroundColor: 'rgba(246, 244, 239, 0.94)',
+          backdropFilter: 'saturate(1.4) blur(8px)',
+          WebkitBackdropFilter: 'saturate(1.4) blur(8px)',
+          borderBottom: `1px solid ${tokens.border}`,
+          color: tokens.text,
         }}
       >
         <Box
           sx={{
             width: '100%',
-            px: { xs: 2, sm: 3 },
+            maxWidth: wide ? 'none' : 1200 + 2 * 48,
+            mx: 'auto',
+            px: wide ? 2 : { xs: 2, sm: 3, md: 6 },
+            height: { xs: HEADER_HEIGHT.xs, md: HEADER_HEIGHT.md },
+            display: 'flex',
+            alignItems: 'center',
+            gap: 2,
           }}
         >
-          {/* Full-width bar */}
           <Box
-            sx={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 1.5,
-              height: 56,
-            }}
+            component={RouterLink}
+            to="/"
+            aria-label="Albumio home"
+            sx={{ display: 'inline-flex', alignItems: 'center', textDecoration: 'none', borderRadius: 1, minHeight: 44 }}
           >
-            {/* Left: drawer menu button + brand */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <IconButton
-                edge="start"
-                aria-label="Open navigation menu"
-                onClick={() => setDrawerOpen(true)}
-                sx={{ color: tokens.gray300 }}
-              >
-                <MenuIcon />
-              </IconButton>
-              <Typography
-                variant="h6"
-                sx={{
-                  fontSize: 20,
-                  fontWeight: 700,
-                  letterSpacing: '-0.02em',
-                  color: tokens.gray100,
-                  userSelect: 'none',
-                }}
-              >
-                AlbumIo
-              </Typography>
-            </Box>
+            <BrandMark />
+          </Box>
 
-            {/* Right: Login/Register or Hello/Logout */}
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              {/* Detect if we are on mobile */}
-              {isMobile ? (
-                <>
-                  <IconButton
-                    aria-label="Account menu"
-                    onClick={(e) => setAnchorEl(e.currentTarget)}
-                    sx={{ color: tokens.gray300 }}
-                  >
-                    <MoreVertIcon />
-                  </IconButton>
-                  <Menu
-                    anchorEl={anchorEl}
-                    open={Boolean(anchorEl)}
-                    onClose={() => setAnchorEl(null)}
-                    disableScrollLock
-                    PaperProps={{
-                      sx: {
-                        mt: 1,
-                        backgroundColor: tokens.gray900,
-                        color: tokens.gray200,
-                        border: `1px solid ${tokens.gray800}`,
-                        borderRadius: 2,
-                      },
-                    }}
-                  >
-                    {/* Array (not Fragment) — MUI Menu requires a flat child list */}
-                    {isLoggedIn
-                      ? [
-                          <MenuItem key="hello" disabled>Hello, {name || email}</MenuItem>,
-                          <MenuItem key="logout" onClick={() => { setAnchorEl(null); handleLogout(); }}>Logout</MenuItem>,
-                        ]
-                      : [
-                          <MenuItem key="login" onClick={() => { setAnchorEl(null); handleOpen(); }}>Login</MenuItem>,
-                          <MenuItem key="register" onClick={() => { setAnchorEl(null); handleOpenRegister(); }}>Register</MenuItem>,
-                        ]}
-                  </Menu>
-                </>
-              ) : (
-                // Desktop view: inline buttons
-                <>
-                  {isLoggedIn ? (
-                    <>
-                      <Typography
-                        variant="body2"
-                        sx={{ color: tokens.mutedTextStrong, mr: 0.5 }}
-                      >
-                        Hello, {name || email}
-                      </Typography>
-                      <Button onClick={handleLogout} sx={darkButtonSx}>
-                        Logout
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button onClick={handleOpen} sx={darkButtonSx}>
-                        Login
-                      </Button>
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={handleOpenRegister}
-                        sx={{ fontSize: 13, px: 1.75, py: 0.5 }}
-                      >
-                        Register
-                      </Button>
-                    </>
-                  )}
-                </>
-              )}
-            </Box>
+          {/* Desktop page navigation */}
+          <Box component="nav" aria-label="Main" sx={{ display: { xs: 'none', md: 'flex' }, gap: 0.5, ml: 3 }}>
+            {links.map((link) => (
+              <Button
+                key={link.label}
+                component={RouterLink}
+                to={link.to}
+                aria-current={isActive(link.to) ? 'page' : undefined}
+                sx={navLinkSx(isActive(link.to))}
+              >
+                {link.label}
+              </Button>
+            ))}
+          </Box>
+
+          <Box sx={{ flexGrow: 1 }} />
+
+          {/* Actions */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {isLoggedIn ? (
+              <>
+                {!onLibrary && (
+                  <Button variant="contained" component={RouterLink} to={LIBRARY_PATH}>
+                    Open library
+                  </Button>
+                )}
+                <Button
+                  onClick={(e) => setAccountAnchor(e.currentTarget)}
+                  aria-label={`Account menu for ${displayName}`}
+                  aria-haspopup="menu"
+                  aria-expanded={Boolean(accountAnchor)}
+                  sx={{ display: { xs: 'none', md: 'inline-flex' }, color: tokens.text, gap: 1, px: 1, minHeight: 44 }}
+                >
+                  <Avatar sx={{ width: 32, height: 32, fontSize: 14, bgcolor: tokens.selected, color: tokens.accentHover }}>
+                    {(displayName || '?').charAt(0).toUpperCase()}
+                  </Avatar>
+                  <Box component="span" sx={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500 }}>
+                    {displayName}
+                  </Box>
+                  <ExpandMoreIcon fontSize="small" sx={{ color: tokens.textSecondary }} />
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  onClick={() => openAuth('login')}
+                  sx={{ display: { xs: 'none', sm: 'inline-flex' }, color: tokens.text, minHeight: 44 }}
+                >
+                  Log in
+                </Button>
+                <Button variant="contained" onClick={() => openAuth('register')}>
+                  Create account
+                </Button>
+              </>
+            )}
+            <IconButton
+              aria-label="Open menu"
+              aria-controls={drawerOpen ? 'site-menu' : undefined}
+              aria-expanded={drawerOpen}
+              onClick={() => setDrawerOpen(true)}
+              sx={{ display: { md: 'none' }, color: tokens.text, width: 44, height: 44 }}
+            >
+              <MenuIcon />
+            </IconButton>
           </Box>
         </Box>
       </AppBar>
 
-      {/* Drawer Menu */}
+      <Menu
+        anchorEl={accountAnchor}
+        open={Boolean(accountAnchor)}
+        onClose={() => setAccountAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{ paper: { sx: { mt: 1, minWidth: 220, border: `1px solid ${tokens.border}`, borderRadius: 2 } } }}
+      >
+        <Box sx={{ px: 2, py: 1 }}>
+          <Typography sx={{ fontWeight: 600 }} noWrap>{displayName}</Typography>
+          {name && name !== email && (
+            <Typography variant="body2" color="text.secondary" noWrap>{email}</Typography>
+          )}
+        </Box>
+        <Divider />
+        <MenuItem onClick={handleLogout} sx={{ minHeight: 44 }}>
+          <ListItemIcon><LogoutIcon fontSize="small" /></ListItemIcon>
+          Log out
+        </MenuItem>
+      </Menu>
+
+      {/* Phone/tablet menu */}
       <Drawer
-        anchor="left"
+        id="site-menu"
+        anchor="right"
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        PaperProps={{
-          sx: {
-            width: 300,
-            backgroundColor: tokens.gray900,
-            color: tokens.gray200,
-            borderRight: `1px solid ${tokens.gray800}`,
-          },
-        }}
+        slotProps={{ paper: { sx: { width: 'min(320px, 86vw)', backgroundColor: tokens.page } } }}
       >
-        <List
-          sx={{
-            '& .MuiListItemText-primary': {
-              fontWeight: 500,
-              letterSpacing: '-0.0125em',
-            },
-            '& .MuiListItemButton-root:hover': {
-              backgroundColor: 'rgba(99, 102, 241, 0.08)',
-            },
-          }}
-        >
-          {isLoggedIn && (location.pathname === "/") ? (
-            <ListItemButton onClick={() => { setDrawerOpen(false); navigate('/album_display'); }}>
-              <ListItemText primary="My Album" />
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, height: HEADER_HEIGHT.xs }}>
+          <Typography sx={{ fontWeight: 600 }}>Menu</Typography>
+          <IconButton aria-label="Close menu" onClick={() => setDrawerOpen(false)} sx={{ width: 44, height: 44 }}>
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        <Divider />
+        <List component="nav" aria-label="Main">
+          {links.map((link) => (
+            <ListItemButton
+              key={link.label}
+              component={RouterLink}
+              to={link.to}
+              selected={isActive(link.to)}
+              aria-current={isActive(link.to) ? 'page' : undefined}
+              onClick={() => setDrawerOpen(false)}
+              sx={{ minHeight: 48 }}
+            >
+              <ListItemText primary={link.label} />
             </ListItemButton>
-          ) : (
-            <ListItemButton onClick={() => { setDrawerOpen(false); navigate('/'); }}>
-              <ListItemText primary="Home" />
-            </ListItemButton>
-          )}
-          <ListItemButton onClick={() => { setDrawerOpen(false); navigate('/about'); }}>
-            <ListItemText primary="About" />
-          </ListItemButton>
+          ))}
         </List>
+        <Divider />
+        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          {isLoggedIn ? (
+            <>
+              <Typography variant="body2" color="text.secondary" noWrap>
+                Signed in as <strong>{displayName}</strong>
+              </Typography>
+              <Button variant="outlined" startIcon={<LogoutIcon />} onClick={handleLogout} sx={{ minHeight: 44 }}>
+                Log out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="contained" onClick={() => openAuth('register')} sx={{ minHeight: 44 }}>
+                Create account
+              </Button>
+              <Button variant="outlined" onClick={() => openAuth('login')} sx={{ minHeight: 44 }}>
+                Log in
+              </Button>
+            </>
+          )}
+        </Box>
       </Drawer>
-
-      <Login open={open} register={register} handleClose={handleClose} />
     </>
   );
 }

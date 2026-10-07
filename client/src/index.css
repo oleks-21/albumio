@@ -1,15 +1,71 @@
+/* Semantic tokens — mirror of src/theme.js `tokens`. */
+:root {
+  --color-page: #F6F4EF;
+  --color-surface: #FFFFFF;
+  --color-surface-subtle: #ECE9E2;
+  --color-text: #202723;
+  --color-text-secondary: #5D665F;
+  --color-accent: #246653;
+  --color-accent-hover: #194B3D;
+  --color-selected: #E5EFE9;
+  --color-border: #D8DDD5;
+  --color-viewer-bg: #151918;
+  --color-viewer-text: #F6F4EF;
+  --color-destructive: #B42318;
+
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: Georgia, 'Times New Roman', serif;
+
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-dialog: 16px;
+
+  --header-height: 64px;
+}
+
+@media (min-width: 900px) {
+  :root { --header-height: 72px; }
+}
+
+html {
+  scroll-padding-top: calc(var(--header-height) + 16px);
+}
+
 body {
   margin: 0;
   padding: 0;
-  background-color: #030712;
-  color: rgba(199, 210, 254, 0.65);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
-    'Helvetica Neue', sans-serif;
-  letter-spacing: -0.0125em;
+  background-color: var(--color-page);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  font-size: 16px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Visible keyboard focus for native controls outside MUI. */
+:where(a, button, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

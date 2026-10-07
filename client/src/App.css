@@ -1,6 +1,6 @@
-.App-header {
-  background-color: #030712;
-  min-height: 100vh;
+.App-main {
+  min-height: calc(100vh - var(--header-height));
   display: block;
-  color: #e5e7eb;
+  background-color: var(--color-page);
+  color: var(--color-text);
 }

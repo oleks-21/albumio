@@ -11,11 +11,15 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { useDispatch } from 'react-redux';
 import { login } from '../../store/store';
 import { request } from '../../api';
-import { tokens } from '../../theme';
+import Typography from '@mui/material/Typography';
+import Link from '@mui/material/Link';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { useTheme } from '@mui/material/styles';
+import { FrameMark } from '../common/BrandMark';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const Login = ({ open, register, handleClose }) => {
+const Login = ({ open, register, handleClose, onSwitchMode }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,6 +27,7 @@ const Login = ({ open, register, handleClose }) => {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'));
 
   // Reset form state whenever the dialog is (re)opened or the mode switches,
   // so stale values/errors never carry over between sessions.
@@ -113,20 +118,30 @@ const Login = ({ open, register, handleClose }) => {
       aria-labelledby="auth-dialog-title"
       maxWidth="xs"
       fullWidth
-      PaperProps={{
-        component: 'form',
-        onSubmit: handleSubmit,
-        sx: {
-          backgroundColor: tokens.gray900,
-          border: `1px solid ${tokens.gray800}`,
-          backgroundImage: 'none',
+      fullScreen={fullScreen}
+      slotProps={{
+        paper: {
+          component: 'form',
+          onSubmit: handleSubmit,
+          noValidate: true,
+          sx: { p: { xs: 1, sm: 1.5 } },
         },
       }}
     >
-      <DialogTitle id="auth-dialog-title" sx={{ textAlign: 'center', color: tokens.gray100 }}>
-        {register ? 'Create your account' : 'Welcome back'}
+      <DialogTitle id="auth-dialog-title" sx={{ textAlign: 'center', pb: 0.5 }}>
+        <Stack alignItems="center" spacing={1.5}>
+          <FrameMark size={36} />
+          <Typography component="span" variant="h4" sx={{ fontFamily: 'Georgia, serif', fontWeight: 400 }}>
+            {register ? 'Create your gallery' : 'Welcome back'}
+          </Typography>
+        </Stack>
       </DialogTitle>
       <DialogContent>
+        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 2 }}>
+          {register
+            ? 'An account keeps your photos, collections and saved slideshows together.'
+            : 'Log in to open your photo library.'}
+        </Typography>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {error && (
             <Alert severity="error" variant="outlined" onClose={() => setError('')}>
@@ -139,6 +154,7 @@ const Login = ({ open, register, handleClose }) => {
               variant="outlined"
               value={name}
               autoFocus
+              autoComplete="name"
               onChange={(e) => setName(e.target.value)}
               disabled={submitting}
               fullWidth
@@ -161,6 +177,7 @@ const Login = ({ open, register, handleClose }) => {
             variant="outlined"
             value={password}
             autoComplete={register ? 'new-password' : 'current-password'}
+            helperText={register ? 'At least 6 characters.' : undefined}
             onChange={(e) => setPassword(e.target.value)}
             disabled={submitting}
             fullWidth
@@ -169,11 +186,30 @@ const Login = ({ open, register, handleClose }) => {
             type="submit"
             variant="contained"
             color="primary"
+            size="large"
             disabled={submitting}
             startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : null}
           >
-            {register ? 'Register' : 'Login'}
+            {register ? 'Create account' : 'Log in'}
           </Button>
+          {onSwitchMode && (
+            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+              {register ? 'Already have an account? ' : 'New to Albumio? '}
+              <Link
+                component="button"
+                type="button"
+                variant="body2"
+                onClick={() => onSwitchMode(register ? 'login' : 'register')}
+                disabled={submitting}
+                sx={{ fontWeight: 600, verticalAlign: 'baseline' }}
+              >
+                {register ? 'Log in' : 'Create an account'}
+              </Link>
+            </Typography>
+          )}
+          {fullScreen && (
+            <Button onClick={handleClose} disabled={submitting}>Cancel</Button>
+          )}
         </Stack>
       </DialogContent>
     </Dialog>

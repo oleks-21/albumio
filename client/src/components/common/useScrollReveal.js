@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 /*
- * Zero-dependency scroll-reveal (replaces AOS from the reference template).
+ * Zero-dependency scroll-reveal.
  * Returns a ref to attach and a `visible` flag that flips true once the
  * element scrolls into view. Purely presentational.
  */

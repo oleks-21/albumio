@@ -1,80 +1,46 @@
-.about-container {
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: 100%;
-  background-color: #030712;
-  padding: 96px 20px 64px;
-  color: #e5e7eb;
+.about {
+  padding: 48px 16px 80px;
 }
 
-.about-card {
-  position: relative;
-  max-width: 800px;
-  background-color: #111827;
-  border-radius: 16px;
-  padding: 40px;
-  transition: transform 0.3s ease;
-}
-
-/* Gradient hairline border */
-.about-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(to right, #1f2937, #374151, #1f2937);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-.about-card:hover {
-  transform: translateY(-5px);
-}
-
-.about-title {
-  font-size: 2rem;
-  font-weight: 600;
-  letter-spacing: -0.0268em;
-  margin-bottom: 20px;
-  text-align: center;
-  color: #e5e7eb;
-}
-
-.about-text {
-  font-size: 1rem;
+.about__card {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  color: var(--color-text);
   line-height: 1.6;
-  margin-bottom: 16px;
-  color: rgba(199, 210, 254, 0.65);
 }
 
-.about-text strong {
-  color: #c7d2fe;
+@media (min-width: 600px) {
+  .about__card { padding: 48px; }
+}
+
+.about__title {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: 2.25rem;
+  line-height: 1.15;
+  margin: 0 0 16px;
+}
+
+.about__subtitle {
+  font-size: 1.125rem;
   font-weight: 600;
+  margin: 32px 0 8px;
 }
 
-.about-list {
-  margin: 16px 0 24px;
+.about__card p,
+.about__card li {
+  color: var(--color-text-secondary);
+}
+
+.about__card ul {
   padding-left: 20px;
+  margin: 0;
 }
 
-.about-list li {
-  margin-bottom: 8px;
-  list-style: disc;
-  color: rgba(199, 210, 254, 0.65);
-}
-
-.about-footer {
-  font-size: 0.9rem;
-  text-align: center;
-  margin-top: 20px;
-  color: #6b7280;
-}
-
-.highlight {
-  color: #818cf8;
-  font-weight: bold;
+.about__card li {
+  margin-bottom: 6px;
 }

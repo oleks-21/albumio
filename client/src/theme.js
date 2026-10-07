@@ -1,230 +1,161 @@
 import { createTheme } from '@mui/material/styles';
 
 /*
- * Design tokens translated from the Cruip "Open" React template
- * (Tailwind gray + indigo scales) into a single MUI dark theme.
- * Styling only — consumed across the app so component-level color
- * hardcoding can be replaced by theme references.
+ * "The Memory Gallery" semantic tokens. Warm paper surfaces for browsing and
+ * organizing, charcoal for full-image viewing, deep teal for actions.
+ * The same values are mirrored as CSS custom properties in index.css so page
+ * CSS and MUI `sx` share one palette.
  */
 export const tokens = {
-  // Grays (Tailwind gray-*)
-  gray950: '#030712',
-  gray900: '#111827',
-  gray800: '#1f2937',
-  gray700: '#374151',
-  gray600: '#4b5563',
-  gray500: '#6b7280',
-  gray400: '#9ca3af',
-  gray300: '#d1d5db',
-  gray200: '#e5e7eb',
-  gray100: '#f3f4f6',
-  gray50: '#f9fafb',
-  // Indigo accent (Tailwind indigo-*)
-  indigo600: '#4f46e5',
-  indigo500: '#6366f1',
-  indigo400: '#818cf8',
-  indigo300: '#a5b4fc',
-  indigo200: '#c7d2fe',
-  slate400: '#94a3b8',
-  // Signature muted body text: indigo-200 @ 65%
-  mutedText: 'rgba(199, 210, 254, 0.65)',
-  mutedTextStrong: 'rgba(199, 210, 254, 0.75)',
+  page: '#F6F4EF',
+  surface: '#FFFFFF',
+  surfaceSubtle: '#ECE9E2',
+  text: '#202723',
+  textSecondary: '#5D665F',
+  accent: '#246653',
+  accentHover: '#194B3D',
+  selected: '#E5EFE9',
+  border: '#D8DDD5',
+  viewerBg: '#151918',
+  viewerSurface: '#1F2523',
+  viewerText: '#F6F4EF',
+  viewerTextSecondary: '#B9C0BA',
+  destructive: '#B42318',
 };
 
-// Reusable gradients / effects
-export const gradients = {
-  // Animated multi-stop heading gradient (gray <-> indigo)
-  heading:
-    'linear-gradient(to right, #e5e7eb, #c7d2fe, #f9fafb, #a5b4fc, #e5e7eb)',
-  // Primary button (indigo, bottom-anchored so hover can "grow" it)
-  primaryButton: 'linear-gradient(to top, #4f46e5, #6366f1)',
-  // Secondary / dark button surface
-  darkButton: `linear-gradient(to bottom, ${tokens.gray800}, rgba(31, 41, 55, 0.6))`,
-  // Hairline gradient border (used via border-image or ::before mask)
-  hairline: `linear-gradient(to right, ${tokens.gray800}, ${tokens.gray700}, ${tokens.gray800})`,
-  // Faint section divider
-  divider:
-    'linear-gradient(to right, transparent, rgba(148, 163, 184, 0.25), transparent)',
+export const radius = { control: 8, card: 12, dialog: 16 };
+
+export const fonts = {
+  sans: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+  serif: 'Georgia, "Times New Roman", serif',
 };
 
-// Gradient hairline border, applied as an `&::before` sx object (mask trick).
-export const hairlineBorder = {
-  content: '""',
-  position: 'absolute',
-  inset: 0,
-  borderRadius: 'inherit',
-  padding: '1px',
-  background: gradients.hairline,
-  WebkitMask:
-    'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)',
-  WebkitMaskComposite: 'xor',
-  maskComposite: 'exclude',
-  pointerEvents: 'none',
-};
+// Fixed header height per breakpoint; the spacer in App.js uses the same values.
+export const HEADER_HEIGHT = { xs: 64, md: 72 };
 
-// Reusable card surface (rounded panel + translucent fill + hairline border).
-export const cardSurface = {
-  position: 'relative',
-  backgroundColor: 'rgba(17, 24, 39, 0.5)',
-  borderRadius: '16px',
-  '&::before': hairlineBorder,
-};
+const focusRing = (color) => ({ outline: `2px solid ${color}`, outlineOffset: 2 });
 
-// Inset highlight that gives the primary button its "lit from top" look
-const primaryInsetHighlight = 'inset 0px 1px 0px 0px rgba(255, 255, 255, 0.16)';
-
-const fontFamily =
-  '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-
-const darkTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    primary: {
-      main: tokens.indigo500,
-      dark: tokens.indigo600,
-      light: tokens.indigo400,
-      contrastText: '#ffffff',
-    },
-    secondary: {
-      main: tokens.indigo200,
-    },
-    background: {
-      default: tokens.gray950,
-      paper: tokens.gray900,
-    },
-    text: {
-      primary: tokens.gray200,
-      secondary: tokens.mutedText,
-    },
-    divider: 'rgba(148, 163, 184, 0.25)',
-  },
-
-  shape: {
-    borderRadius: 8,
-  },
-
+const shared = {
+  shape: { borderRadius: radius.control },
   typography: {
-    fontFamily,
-    // Body — Tailwind --text-base (15px) with tight tracking
-    fontSize: 15,
-    body1: { fontSize: '0.9375rem', lineHeight: 1.5333, letterSpacing: '-0.0125em' },
-    body2: { fontSize: '0.875rem', lineHeight: 1.5715 },
-    // Headings: Inter semibold, progressively tighter tracking
-    h1: { fontWeight: 600, fontSize: '3.5rem', lineHeight: 1, letterSpacing: '-0.0268em' },
-    h2: { fontWeight: 600, fontSize: '2.5rem', lineHeight: 1.1, letterSpacing: '-0.0268em' },
-    h3: { fontWeight: 600, fontSize: '1.75rem', lineHeight: 1.3571, letterSpacing: '-0.0268em' },
-    h4: { fontWeight: 600, fontSize: '1.5rem', lineHeight: 1.415, letterSpacing: '-0.0268em' },
-    h5: { fontWeight: 600, fontSize: '1.25rem', lineHeight: 1.5, letterSpacing: '-0.0125em' },
-    h6: { fontWeight: 600, fontSize: '1.125rem', lineHeight: 1.5, letterSpacing: '-0.0125em' },
-    button: { fontWeight: 500, letterSpacing: 0 },
+    fontFamily: fonts.sans,
+    body1: { fontSize: '1rem', lineHeight: 1.55 },
+    body2: { fontSize: '0.875rem', lineHeight: 1.5 },
+    h1: { fontFamily: fonts.serif, fontWeight: 400, fontSize: '3.5rem', lineHeight: 1.08, letterSpacing: '-0.01em' },
+    h2: { fontFamily: fonts.serif, fontWeight: 400, fontSize: '2.25rem', lineHeight: 1.15 },
+    h3: { fontWeight: 600, fontSize: '1.5rem', lineHeight: 1.3, letterSpacing: '-0.01em' },
+    h4: { fontWeight: 600, fontSize: '1.375rem', lineHeight: 1.3, letterSpacing: '-0.01em' },
+    h5: { fontWeight: 600, fontSize: '1.125rem', lineHeight: 1.4 },
+    h6: { fontWeight: 600, fontSize: '1rem', lineHeight: 1.4 },
+    button: { fontWeight: 600, fontSize: '0.9375rem', letterSpacing: 0, textTransform: 'none' },
+    caption: { fontSize: '0.875rem' },
   },
+};
 
+const componentsFor = (ring) => ({
+  MuiButton: {
+    defaultProps: { disableElevation: true },
+    styleOverrides: {
+      root: {
+        borderRadius: radius.control,
+        padding: '8px 16px',
+        minHeight: 40,
+        '&.Mui-focusVisible': ring,
+      },
+      sizeLarge: { padding: '11px 22px', minHeight: 48, fontSize: '1rem' },
+      sizeSmall: { minHeight: 32 },
+    },
+  },
+  MuiIconButton: {
+    styleOverrides: { root: { '&.Mui-focusVisible': ring } },
+  },
+  MuiDialog: {
+    styleOverrides: { paper: { borderRadius: radius.dialog, '&.MuiDialog-paperFullScreen': { borderRadius: 0 } } },
+  },
+  MuiChip: {
+    styleOverrides: { root: { fontWeight: 500 } },
+  },
+  MuiTooltip: {
+    styleOverrides: { tooltip: { fontSize: '0.8125rem' } },
+  },
+});
+
+const sharedComponents = componentsFor(focusRing(tokens.accent));
+
+const theme = createTheme({
+  ...shared,
+  palette: {
+    mode: 'light',
+    primary: { main: tokens.accent, dark: tokens.accentHover, contrastText: '#FFFFFF' },
+    secondary: { main: tokens.text },
+    error: { main: tokens.destructive },
+    background: { default: tokens.page, paper: tokens.surface },
+    text: { primary: tokens.text, secondary: tokens.textSecondary },
+    divider: tokens.border,
+    action: { selected: tokens.selected },
+  },
   components: {
+    ...sharedComponents,
     MuiCssBaseline: {
       styleOverrides: {
-        body: {
-          backgroundColor: tokens.gray950,
-          color: tokens.mutedText,
-        },
+        body: { backgroundColor: tokens.page, color: tokens.text },
       },
     },
-
     MuiButton: {
-      defaultProps: {
-        disableElevation: true,
-      },
+      ...sharedComponents.MuiButton,
       styleOverrides: {
-        root: {
-          textTransform: 'none',
-          borderRadius: 8,
-          fontWeight: 500,
-          padding: '9px 16px',
-          transition: 'all 0.2s ease',
+        ...sharedComponents.MuiButton.styleOverrides,
+        outlined: {
+          borderColor: tokens.border,
+          color: tokens.text,
+          backgroundColor: tokens.surface,
+          '&:hover': { borderColor: tokens.textSecondary, backgroundColor: tokens.surface },
         },
-        // Primary gradient button with inset top highlight + hover "grow"
         containedPrimary: {
-          backgroundImage: gradients.primaryButton,
-          backgroundSize: '100% 100%',
-          backgroundPosition: 'bottom',
-          boxShadow: primaryInsetHighlight,
-          '&:hover': {
-            backgroundImage: gradients.primaryButton,
-            backgroundSize: '100% 150%',
-            boxShadow: primaryInsetHighlight,
-          },
+          '&:hover': { backgroundColor: tokens.accentHover },
         },
       },
     },
-
-    MuiAppBar: {
-      styleOverrides: {
-        root: {
-          backgroundImage: 'none',
-        },
-      },
-    },
-
-    MuiTab: {
-      styleOverrides: {
-        root: {
-          textTransform: 'none',
-          fontWeight: 500,
-          letterSpacing: '-0.0125em',
-          color: tokens.mutedText,
-          '&.Mui-selected': {
-            color: tokens.gray100,
-          },
-        },
-      },
-    },
-    MuiTabs: {
-      styleOverrides: {
-        indicator: {
-          backgroundColor: tokens.indigo500,
-        },
-      },
-    },
-
-    // Dark form fields (Tailwind .form-input: gray-900/50 + gray-700 border)
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          backgroundColor: 'rgba(17, 24, 39, 0.5)',
-          borderRadius: 8,
-          '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: tokens.gray700,
-          },
-          '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: tokens.gray600,
-          },
-          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-            borderColor: tokens.gray600,
-            borderWidth: 1,
-          },
-        },
-        input: {
-          color: tokens.gray200,
-          '&::placeholder': { color: tokens.gray600, opacity: 1 },
+          backgroundColor: tokens.surface,
+          borderRadius: radius.control,
+          '& .MuiOutlinedInput-notchedOutline': { borderColor: tokens.border },
+          '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: tokens.textSecondary },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: tokens.accent, borderWidth: 2 },
         },
       },
     },
     MuiInputLabel: {
-      styleOverrides: {
-        root: {
-          color: tokens.gray400,
-          '&.Mui-focused': { color: tokens.indigo300 },
-        },
-      },
+      styleOverrides: { root: { color: tokens.textSecondary } },
     },
-
+    MuiAppBar: {
+      styleOverrides: { root: { backgroundImage: 'none' } },
+    },
     MuiPaper: {
-      styleOverrides: {
-        root: {
-          backgroundImage: 'none',
-        },
-      },
+      styleOverrides: { root: { backgroundImage: 'none' } },
     },
   },
 });
 
-export default darkTheme;
+/** Dark theme for full-image surfaces: preview, slideshow. */
+export const viewerTheme = createTheme({
+  ...shared,
+  palette: {
+    mode: 'dark',
+    primary: { main: '#7CC4AC', dark: '#5EA98F', contrastText: tokens.viewerBg },
+    error: { main: '#F97066' },
+    background: { default: tokens.viewerBg, paper: tokens.viewerSurface },
+    text: { primary: tokens.viewerText, secondary: tokens.viewerTextSecondary },
+    divider: 'rgba(246, 244, 239, 0.14)',
+  },
+  components: {
+    ...componentsFor(focusRing(tokens.viewerText)),
+    MuiPaper: {
+      styleOverrides: { root: { backgroundImage: 'none' } },
+    },
+  },
+});
+
+export default theme;

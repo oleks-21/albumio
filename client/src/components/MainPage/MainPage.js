@@ -1,230 +1,249 @@
+import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import Box from '@mui/material/Box';
-import Grid from '@mui/material/Grid';
-import Carousel from "react-multi-carousel";
-import "react-multi-carousel/lib/styles.css";
+import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import Link from '@mui/material/Link';
+import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import './MainPage.css';
-import { tokens, gradients, cardSurface } from '../../theme';
+import { tokens, fonts } from '../../theme';
 import SectionContainer from '../common/SectionContainer';
-import GradientHeading from '../common/GradientHeading';
 import Reveal from '../common/Reveal';
+import BrandMark from '../common/BrandMark';
 
-// On-brand placeholder shown when a (hot-linked) remote image fails to load,
-// so the landing page degrades gracefully instead of showing broken-image icons.
-const FALLBACK_IMAGE =
-  'data:image/svg+xml;utf8,' +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="220">' +
-      '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
-      '<stop offset="0" stop-color="#111827"/><stop offset="1" stop-color="#1f2937"/>' +
-      '</linearGradient></defs>' +
-      '<rect width="400" height="220" fill="url(#g)"/>' +
-      '<text x="50%" y="50%" fill="#6366f1" font-family="Inter,Arial,sans-serif" ' +
-      'font-size="14" text-anchor="middle" dominant-baseline="middle">Image unavailable</text>' +
-    '</svg>'
+const IMG = `${process.env.PUBLIC_URL}/images`;
+
+const STEPS = [
+  {
+    title: 'Add photos',
+    text: 'Choose a batch of photos, give them a collection name, and watch each one upload.',
+    image: `${IMG}/walkthrough/add-photos.jpg`,
+    alt: 'The Albumio upload dialog with three chosen photos and a collection name filled in',
+  },
+  {
+    title: 'Organize collections',
+    text: 'Filter by collection, search by name, and rename or re-file any photo from its viewer.',
+    image: `${IMG}/walkthrough/organize.jpg`,
+    alt: 'The Albumio library showing a collections sidebar beside a grid of photos',
+  },
+  {
+    title: 'Enjoy a slideshow',
+    text: 'Play every photo, a few collections, or a saved selection full screen at your own pace.',
+    image: `${IMG}/walkthrough/slideshow.jpg`,
+    alt: 'An Albumio slideshow showing one photo on a dark stage with playback controls',
+  },
+];
+
+const GALLERY = [
+  { src: 'fjord.jpg', alt: 'A deep blue fjord between steep cliffs', w: 1000, h: 667, className: 'home-gallery__item--big' },
+  { src: 'harbour-lane.jpg', alt: 'A narrow stone lane opening onto the sea', w: 800, h: 1200, className: 'home-gallery__item--tall' },
+  { src: 'fawn.jpg', alt: 'A young deer in a sunlit forest', w: 800, h: 1200, className: 'home-gallery__item--tall' },
+  { src: 'valley.jpg', alt: 'Sunlit pines in a valley under granite walls', w: 1000, h: 667 },
+  { src: 'jetty.jpg', alt: 'A wooden jetty leading to a pavilion over calm water', w: 800, h: 541 },
+  { src: 'coastline.jpg', alt: 'Turquoise sea below pale sandstone cliffs', w: 1000, h: 667, className: 'home-gallery__item--wide' },
+];
+
+export default function MainPage({ onOpenAuth }) {
+  const isLoggedIn = useSelector(state => state.user.isLoggedIn);
+  const location = useLocation();
+
+  // Honour /#how-it-works links from the header and other pages.
+  useEffect(() => {
+    if (!location.hash) return;
+    const target = document.getElementById(location.hash.slice(1));
+    if (target) target.scrollIntoView({ block: 'start' });
+  }, [location.hash]);
+
+  const primaryAction = isLoggedIn ? (
+    <Button variant="contained" size="large" component={RouterLink} to="/album_display">
+      Open your library
+    </Button>
+  ) : (
+    <Button variant="contained" size="large" onClick={() => onOpenAuth?.('register')}>
+      Create your gallery
+    </Button>
   );
 
-export default function MainPage() {
-  const responsive = {
-    desktop: { breakpoint: { max: 3000, min: 1024 }, items: 1 },
-    tablet: { breakpoint: { max: 1024, min: 464 }, items: 1 },
-    mobile: { breakpoint: { max: 464, min: 0 }, items: 1 }
-  };
-  const albumImages = [
-    'https://www.befunky.com/images/wp/wp-2023-05-Photo-Album-7.png?auto=avif,webp&format=jpg&width=944',
-    'https://static.vecteezy.com/system/resources/thumbnails/071/840/363/small/modern-art-gallery-interior-showcases-vibrant-abstract-paintings-on-white-walls-with-a-blank-canvas-space-highlighting-a-contemporary-artistic-ambiance-photo.jpg',
-    'https://static01.nyt.com/images/2019/04/10/technology/personaltech/10TECHTIP_TOP/10TECHTIP_TOP-superJumbo.jpg',
-  ]
-  const editingImages = [
-    'https://www.breathingcolor.com/cdn/shop/articles/the-neglected-art-of-cropping-994454_1024x1024.jpg?v=1702700444',
-    'https://greenwebpage.com/community/wp-content/uploads/2024/03/word-image-11067-8.png',
-    'https://media.istockphoto.com/id/530721229/photo/35mm-movie-reel-and-scissors-for-the-final-cut.jpg?s=612x612&w=0&k=20&c=pvAQnzjZUX9KvN-JQYVw098A9PiWeM-a59wYGaqciSE=',
-    'https://cdn.fstoppers.com/styles/large-16-9/s3/lead/2022/07/cover_1.jpg'
-  ]
-  const shareImages = [
-    'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSBMAkzoyUo2BnKVAOrOxkpru3leOqfN54EPQ&s',
-    'https://www.adobe.com/products/photoshop-lightroom/media_12b765fe058d34909326491b26b18b26515048029.png?width=750&format=png&optimize=medium',
-    'https://media.istockphoto.com/id/1000173680/photo/business-people-are-exchanging-document.jpg?s=612x612&w=0&k=20&c=z0zd7r8guK5vAr6I5MzSf09nYrLu3utQSEE7-ZF-Nm8=',
-    'https://www.ellisandco.co.uk/wp-content/uploads/2024/05/shutterstock_677561335.jpg'
-  ]
-  const sunsetImages = [
-    'https://t3.ftcdn.net/jpg/03/23/43/70/360_F_323437030_50R1ab1yLRShdXtijImeTGdMtZtkfnPa.jpg',
-    'https://images.unsplash.com/photo-1506138979136-a74b54936c90?fm=jpg&q=60&w=3000&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c3Vuc2V0JTIwc2lsaG91ZXR0ZXxlbnwwfHwwfHx8MA%3D%3D',
-    'https://i.etsystatic.com/13981758/r/il/bd9e50/1752425734/il_570xN.1752425734_dlnm.jpg',
-    'https://ichef.bbci.co.uk/ace/standard/3840/cpsprodpb/4ee5/live/b0924ce0-596d-11ef-8a89-bbbee37e7303.jpg',
-    'https://t4.ftcdn.net/jpg/01/93/74/95/360_F_193749563_BCjYurGfpZ88kmlb88kZqL8qnlS22jg4.jpg'
-  ]
-
-  // Feature cards (same image data as before, driven from one config)
-  const features = [
-    {
-      images: albumImages,
-      caption:
-        'Store beautiful photos and display them later with the use of our respository tools. Retrieving and casting them on your TV, tablet, laptop etc. is quick, simple and convenient.'
-    },
-    {
-      images: editingImages,
-      caption:
-        'Give a bold touch to your images using our edtiting software. Crop, combine and delete to create truly unique compositions.'
-    },
-    {
-      images: shareImages,
-      caption:
-        'Memories are best shared - give others a chance to see your vignettes. Exchanges individual pictures and complete works to become inspired.'
-    },
-    {
-      images: sunsetImages,
-      caption:
-        'Arrange your images by themes and display them in tandem with other similar pictures. Keep your albums sorted, as well as organized. Build up your personal collections now!'
-    }
-  ];
-
   return (
-    <div>
+    <div className="home">
       {/* Hero */}
-      <Box
-        component="section"
-        sx={{ position: 'relative', overflow: 'hidden', pt: { xs: 8, md: 12 }, pb: { xs: 6, md: 10 } }}
-      >
-        {/* Indigo glow behind the heading */}
-        <Box aria-hidden className="hero-glow" />
-        <SectionContainer sx={{ position: 'relative', zIndex: 1, textAlign: 'center' }}>
-          <Reveal>
-            <GradientHeading
-              variant="h1"
-              component="h1"
-              sx={{ fontSize: { xs: '2.5rem', md: '3.5rem' }, pb: 2.5 }}
-            >
-              Create Your Own Albums
-            </GradientHeading>
-          </Reveal>
-          <Reveal delay={150}>
-            <Typography
-              sx={{
-                maxWidth: 720,
-                mx: 'auto',
-                color: tokens.mutedText,
-                fontSize: { xs: '1.125rem', md: '1.25rem' },
-                lineHeight: 1.5
-              }}
-            >
-              This web service allows users to store images to view them later. Preview them and start a slideshow with your collections.
-            </Typography>
-          </Reveal>
+      <Box component="section" aria-labelledby="home-title" sx={{ pt: { xs: 3, md: 8 }, pb: { xs: 7, md: 12 } }}>
+        <SectionContainer>
+          <div className="home-hero">
+            <div className="home-hero__copy">
+              <Typography
+                component="p"
+                sx={{ color: tokens.accent, fontWeight: 600, fontSize: '0.875rem', letterSpacing: '0.08em', textTransform: 'uppercase', mb: { xs: 1.5, md: 2 } }}
+              >
+                Your personal photo gallery
+              </Typography>
+              <Typography
+                id="home-title"
+                variant="h1"
+                sx={{ fontSize: { xs: '2.25rem', sm: '2.75rem', md: '3.5rem' }, mb: { xs: 1.5, md: 2.5 } }}
+              >
+                Your photos. Beautifully together.
+              </Typography>
+              <Typography sx={{ color: tokens.textSecondary, fontSize: { xs: '1rem', md: '1.1875rem' }, maxWidth: 480, mb: { xs: 2.5, md: 4 } }}>
+                Organize your photos into collections, make a few edits, and enjoy them as a slideshow.
+              </Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
+                {primaryAction}
+                <Button variant="outlined" size="large" href="#how-it-works" endIcon={<ArrowDownwardIcon />}>
+                  See how it works
+                </Button>
+              </Box>
+            </div>
+
+            <div className="home-hero__art">
+              <figure className="home-frame home-frame--main">
+                <img
+                  src={`${IMG}/samples/lake-canoe.jpg`}
+                  alt="A person in a red jacket canoeing across a calm turquoise lake"
+                  width={1600}
+                  height={1067}
+                  fetchPriority="high"
+                />
+              </figure>
+              <figure className="home-frame home-frame--small home-frame--a">
+                <img
+                  src={`${IMG}/samples/beach-walk.jpg`}
+                  alt="A parent carrying a small child along a sandy beach"
+                  width={800}
+                  height={533}
+                />
+              </figure>
+              <figure className="home-frame home-frame--small home-frame--b">
+                <img
+                  src={`${IMG}/samples/blanket-pug.jpg`}
+                  alt="A pug wrapped in a checked blanket on a forest path"
+                  width={800}
+                  height={533}
+                />
+              </figure>
+              <p className="home-hero__label" aria-hidden="true">
+                <span className="home-hero__label-dot" />
+                Lake weekend
+              </p>
+            </div>
+          </div>
         </SectionContainer>
       </Box>
 
-      {/* Feature cards */}
-      <Box component="section" sx={{ pb: { xs: 8, md: 14 } }}>
+      {/* Walkthrough */}
+      <Box
+        component="section"
+        id="how-it-works"
+        aria-labelledby="how-title"
+        sx={{ py: { xs: 7, md: 12 }, backgroundColor: tokens.surface, borderTop: `1px solid ${tokens.border}`, borderBottom: `1px solid ${tokens.border}` }}
+      >
+        <SectionContainer>
+          <Reveal>
+            <Typography id="how-title" variant="h2" sx={{ fontSize: { xs: '1.875rem', md: '2.5rem' }, mb: 1.5 }}>
+              How Albumio works
+            </Typography>
+            <Typography sx={{ color: tokens.textSecondary, maxWidth: 560, mb: { xs: 4, md: 6 } }}>
+              Three steps from a folder of pictures to an evening of looking back.
+            </Typography>
+          </Reveal>
+          <ol className="home-steps">
+            {STEPS.map((step, i) => (
+              <li key={step.title} className="home-steps__item">
+                <Reveal delay={i * 100}>
+                  <div className="home-steps__shot">
+                    <img src={step.image} alt={step.alt} width={1200} height={900} loading="lazy" />
+                  </div>
+                  <Typography variant="h3" component="h3" sx={{ fontSize: '1.25rem', mt: 2.5, mb: 0.75, display: 'flex', alignItems: 'baseline', gap: 1 }}>
+                    <Box component="span" sx={{ fontFamily: fonts.serif, fontWeight: 400, color: tokens.accent }}>{i + 1}.</Box>
+                    {step.title}
+                  </Typography>
+                  <Typography sx={{ color: tokens.textSecondary }}>{step.text}</Typography>
+                </Reveal>
+              </li>
+            ))}
+          </ol>
+        </SectionContainer>
+      </Box>
+
+      {/* Sample gallery */}
+      <Box component="section" aria-labelledby="gallery-title" sx={{ py: { xs: 7, md: 12 } }}>
+        <SectionContainer>
+          <Reveal>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: 2, mb: { xs: 3, md: 5 } }}>
+              <Box sx={{ maxWidth: 620 }}>
+                <Typography id="gallery-title" variant="h2" sx={{ fontSize: { xs: '1.875rem', md: '2.5rem' }, mb: 1.5 }}>
+                  Made for looking, not managing
+                </Typography>
+                <Typography sx={{ color: tokens.textSecondary }}>
+                  Photos fill the page and open large. When one needs a touch-up, draw on it, crop it, or adjust its color without leaving your library.
+                </Typography>
+              </Box>
+              <Typography variant="body2" sx={{ color: tokens.textSecondary }}>
+                Sample collection · Coast &amp; forest
+              </Typography>
+            </Box>
+          </Reveal>
+          <div className="home-gallery">
+            {GALLERY.map((photo) => (
+              <figure key={photo.src} className={`home-gallery__item ${photo.className || ''}`}>
+                <img src={`${IMG}/samples/${photo.src}`} alt={photo.alt} width={photo.w} height={photo.h} loading="lazy" />
+              </figure>
+            ))}
+          </div>
+        </SectionContainer>
+      </Box>
+
+      {/* Closing action */}
+      <Box component="section" aria-labelledby="cta-title" sx={{ pb: { xs: 7, md: 12 } }}>
         <SectionContainer>
           <Box
             sx={{
-              pt: { xs: 6, md: 10 },
-              borderTop: '1px solid',
-              borderImageSource: gradients.divider,
-              borderImageSlice: 1
+              backgroundColor: tokens.viewerBg,
+              color: tokens.viewerText,
+              borderRadius: 4,
+              px: { xs: 3, md: 8 },
+              py: { xs: 5, md: 7 },
+              display: 'flex',
+              flexDirection: { xs: 'column', md: 'row' },
+              alignItems: { xs: 'flex-start', md: 'center' },
+              justifyContent: 'space-between',
+              gap: 3,
             }}
           >
-            {/* Section header */}
-            <Box sx={{ maxWidth: 720, mx: 'auto', textAlign: 'center', mb: { xs: 5, md: 8 } }}>
-              <Reveal>
-                <Box
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    mb: 1.5,
-                    '&::before, &::after': {
-                      content: '""',
-                      height: '1px',
-                      width: 32,
-                      background: 'linear-gradient(to right, transparent, rgba(199,210,254,0.5))'
-                    },
-                    '&::after': {
-                      background: 'linear-gradient(to left, transparent, rgba(199,210,254,0.5))'
-                    }
-                  }}
-                >
-                  <Box
-                    component="span"
-                    sx={{
-                      backgroundImage: `linear-gradient(to right, ${tokens.indigo500}, ${tokens.indigo200})`,
-                      backgroundClip: 'text',
-                      WebkitBackgroundClip: 'text',
-                      color: 'transparent',
-                      WebkitTextFillColor: 'transparent',
-                      fontSize: '0.875rem',
-                      fontWeight: 500
-                    }}
-                  >
-                    Everything in one place
-                  </Box>
-                </Box>
-                <GradientHeading
-                  variant="h2"
-                  sx={{ display: 'block', fontSize: { xs: '1.75rem', md: '2.5rem' }, pb: 1.5 }}
-                >
-                  Built for your memories
-                </GradientHeading>
-                <Typography sx={{ color: tokens.mutedText, fontSize: '1.125rem', lineHeight: 1.5 }}>
-                  Store, edit, share and relive your photos — organized into collections and ready for a fullscreen slideshow whenever you are.
-                </Typography>
-              </Reveal>
+            <Box>
+              <Typography id="cta-title" variant="h2" sx={{ fontSize: { xs: '1.75rem', md: '2.25rem' }, mb: 1 }}>
+                {isLoggedIn ? 'Your library is waiting.' : 'Start your gallery today.'}
+              </Typography>
+              <Typography sx={{ color: tokens.viewerTextSecondary }}>
+                {isLoggedIn
+                  ? 'Pick up where you left off with your collections and saved slideshows.'
+                  : 'Create an account, add a few photos, and play them back tonight.'}
+              </Typography>
             </Box>
+            {isLoggedIn ? (
+              <Button variant="contained" size="large" component={RouterLink} to="/album_display" sx={{ flexShrink: 0, bgcolor: tokens.page, color: tokens.text, '&:hover': { bgcolor: '#FFFFFF' } }}>
+                Open your library
+              </Button>
+            ) : (
+              <Button variant="contained" size="large" onClick={() => onOpenAuth?.('register')} sx={{ flexShrink: 0, bgcolor: tokens.page, color: tokens.text, '&:hover': { bgcolor: '#FFFFFF' } }}>
+                Create your gallery
+              </Button>
+            )}
+          </Box>
+        </SectionContainer>
+      </Box>
 
-            {/* Cards */}
-            <Grid container spacing={4}>
-              {features.map((feature, i) => (
-                <Grid size={{ xs: 12, md: 6 }} key={i}>
-                  <Reveal delay={(i % 2) * 150}>
-                    <Box sx={{ ...cardSurface, p: 2, height: '100%' }}>
-                      <Box sx={{ borderRadius: '10px', overflow: 'hidden', backgroundColor: tokens.gray950 }}>
-                        <Carousel
-                          responsive={responsive}
-                          infinite
-                          autoPlay
-                          autoPlaySpeed={3000}
-                          arrows={false}
-                          showDots={false}
-                          containerClass="carousel-container"
-                          itemClass="carousel-item-padding"
-                        >
-                          {feature.images.map((url) => (
-                            <div key={url}>
-                              <img
-                                src={url}
-                                alt=""
-                                width={400}
-                                height={220}
-                                loading="lazy"
-                                onError={(e) => {
-                                  // Swap once to the placeholder; guard against loops.
-                                  if (e.currentTarget.dataset.fallback) return;
-                                  e.currentTarget.dataset.fallback = 'true';
-                                  e.currentTarget.src = FALLBACK_IMAGE;
-                                }}
-                                style={{
-                                  width: '100%',
-                                  height: '220px',
-                                  objectFit: 'cover',
-                                  display: 'block'
-                                }}
-                              />
-                            </div>
-                          ))}
-                        </Carousel>
-                      </Box>
-                      <Typography
-                        variant="body1"
-                        sx={{ mt: 2, px: 0.5, color: tokens.mutedText, textAlign: 'left', lineHeight: 1.5 }}
-                      >
-                        {feature.caption}
-                      </Typography>
-                    </Box>
-                  </Reveal>
-                </Grid>
-              ))}
-            </Grid>
+      {/* Footer */}
+      <Box component="footer" sx={{ borderTop: `1px solid ${tokens.border}`, py: 4 }}>
+        <SectionContainer sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <BrandMark size={24} />
+          <Box component="nav" aria-label="Footer" sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 2, sm: 3 } }}>
+            <Link href="#how-it-works" color="text.secondary" underline="hover">How it works</Link>
+            <Link component={RouterLink} to="/about" color="text.secondary" underline="hover">About</Link>
+            <Link href="https://unsplash.com/license" color="text.secondary" underline="hover" target="_blank" rel="noopener noreferrer">
+              Sample photos via Unsplash
+            </Link>
           </Box>
         </SectionContainer>
       </Box>
