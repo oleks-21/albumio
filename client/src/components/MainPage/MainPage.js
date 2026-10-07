@@ -11,6 +11,7 @@ import { tokens, fonts } from '../../theme';
 import SectionContainer from '../common/SectionContainer';
 import Reveal from '../common/Reveal';
 import BrandMark from '../common/BrandMark';
+import { useResolvedScheme } from '../common/ColorModeToggle';
 
 const IMG = `${process.env.PUBLIC_URL}/images`;
 
@@ -21,19 +22,20 @@ const STEPS = [
   {
     title: 'Add photos',
     text: 'Choose a batch of photos, give them a collection name, and watch each one upload.',
-    image: `${IMG}/walkthrough/add-photos.jpg`,
+    image: (scheme) => `${IMG}/walkthrough/add-photos-${scheme}.jpg`,
     alt: 'The Albumio upload dialog with three chosen photos and a collection name filled in',
   },
   {
     title: 'Organize collections',
     text: 'Filter by collection, search by name, and rename or re-file any photo from its viewer.',
-    image: `${IMG}/walkthrough/organize.jpg`,
+    image: (scheme) => `${IMG}/walkthrough/organize-${scheme}.jpg`,
     alt: 'The Albumio library showing a collections sidebar beside a grid of photos',
   },
   {
     title: 'Enjoy a slideshow',
     text: 'Play every photo, a few collections, or a saved selection full screen at your own pace.',
-    image: `${IMG}/walkthrough/slideshow.jpg`,
+    // The slideshow is dark in both color schemes.
+    image: () => `${IMG}/walkthrough/slideshow.jpg`,
     alt: 'An Albumio slideshow showing one photo on a dark stage with playback controls',
   },
 ];
@@ -50,6 +52,8 @@ const GALLERY = [
 export default function MainPage({ onOpenAuth }) {
   const isLoggedIn = useSelector(state => state.user.isLoggedIn);
   const location = useLocation();
+  // Product screenshots match the color scheme on screen.
+  const { resolved: scheme } = useResolvedScheme();
 
   // Honour /#how-it-works links from the header and other pages.
   useEffect(() => {
@@ -155,7 +159,7 @@ export default function MainPage({ onOpenAuth }) {
               <li key={step.title} className="home-steps__item">
                 <Reveal delay={i * 100}>
                   <div className="home-steps__shot">
-                    <img src={step.image} alt={step.alt} width={1200} height={900} loading="lazy" />
+                    <img src={step.image(scheme)} alt={step.alt} width={1200} height={900} loading="lazy" />
                   </div>
                   <Typography variant="h3" component="h3" sx={{ fontSize: '1.25rem', mt: 2.5, mb: 0.75, display: 'flex', alignItems: 'baseline', gap: 1 }}>
                     <Box component="span" sx={{ fontFamily: fonts.serif, fontWeight: 400, color: tokens.accent }}>{i + 1}.</Box>

@@ -23,6 +23,7 @@ import { logout } from '../../store/store';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { tokens, HEADER_HEIGHT } from '../../theme';
 import BrandMark from '../common/BrandMark';
+import ColorModeToggle from '../common/ColorModeToggle';
 
 const LIBRARY_PATH = '/album_display';
 
@@ -147,6 +148,7 @@ export default function TopBar({ onOpenAuth }) {
 
           {/* Actions */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <ColorModeToggle sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
             {isLoggedIn ? (
               <>
                 {!onLibrary && (
@@ -249,6 +251,7 @@ export default function TopBar({ onOpenAuth }) {
         </List>
         <Divider />
         <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
+          <ColorModeToggle variant="button" sx={{ mb: 1 }} />
           {isLoggedIn ? (
             <>
               <Typography variant="body2" color="text.secondary" noWrap>

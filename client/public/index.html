@@ -4,7 +4,20 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#F6F4EF" />
+    <meta name="theme-color" content="#F2FAFB" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0A161C" media="(prefers-color-scheme: dark)" />
+    <script>
+      // Apply the saved (or system) color scheme before first paint so the
+      // page never flashes the wrong theme. Mirrors MUI's 'mui-mode' storage.
+      (function () {
+        try {
+          var mode = localStorage.getItem('mui-mode') || 'system';
+          var dark = mode === 'dark' ||
+            (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        } catch (e) {}
+      })();
+    </script>
     <meta
       name="description"
       content="Albumio — organize your photos into collections, make a few edits, and enjoy them as a slideshow."

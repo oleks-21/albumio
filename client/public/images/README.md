@@ -18,5 +18,5 @@ including commercially; no permission needed). Files were fetched through
 | `samples/jetty.jpg` | May Pamintuan | https://unsplash.com/photos/j9nfqTi5T5o |
 | `samples/fawn.jpg` | E+N Photographies | https://unsplash.com/photos/GYumuBnTqKc |
 
-`walkthrough/*.jpg` are screenshots of Albumio itself, captured against a local
+`walkthrough/*.jpg` are screenshots of Albumio itself (light and dark variants), captured against a local
 mock API populated with the Unsplash photos above (no real account data).
