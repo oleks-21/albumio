@@ -85,6 +85,22 @@ describe('homepage', () => {
   });
 });
 
+describe('color mode', () => {
+  afterEach(() => localStorage.removeItem('mui-mode'));
+
+  test('the header toggle switches to dark mode and remembers the choice', async () => {
+    mockApi();
+    renderAt('/');
+    // jsdom reports no dark-mode preference, so the app starts light.
+    await waitFor(() => expect(document.documentElement).toHaveAttribute('data-theme', 'light'));
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to dark mode' }));
+    await waitFor(() => expect(document.documentElement).toHaveAttribute('data-theme', 'dark'));
+    expect(localStorage.getItem('mui-mode')).toBe('dark');
+    fireEvent.click(screen.getByRole('button', { name: 'Switch to light mode' }));
+    await waitFor(() => expect(document.documentElement).toHaveAttribute('data-theme', 'light'));
+  });
+});
+
 describe('library', () => {
   beforeEach(() => store.dispatch(login('tester@example.com')));
 
