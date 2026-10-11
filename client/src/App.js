@@ -13,11 +13,14 @@ import theme, { HEADER_HEIGHT } from './theme';
 import useAuthSync from './auth/useAuthSync';
 
 // Code-split the routes that aren't part of the first paint. MainPage (the
-// landing page) and TopBar stay eager; the logged-in Album subtree, the canvas
-// editor, About and NotFound load on demand.
+// landing page) and TopBar stay eager; the logged-in Album subtree, event
+// albums, the canvas editor, About and NotFound load on demand.
 const Album = lazy(() => import('./components/Album/Album'));
 const EditImage = lazy(() => import('./components/EditImage/EditImage'));
 const About = lazy(() => import('./components/About/About'));
+const EventAlbums = lazy(() => import('./components/Events/EventAlbums'));
+const EventAlbum = lazy(() => import('./components/Events/EventAlbum'));
+const GuestJoin = lazy(() => import('./components/Events/GuestJoin'));
 const NotFound = lazy(() => import('./components/NotFound/NotFound'));
 
 // Defined at module scope so it isn't recreated on every App render. Waits
@@ -63,6 +66,17 @@ export default function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/events"
+                element={
+                  <ProtectedRoute>
+                    <EventAlbums />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Hosts and guests share the album page; the server decides access. */}
+              <Route path="/events/:albumId" element={<EventAlbum />} />
+              <Route path="/join" element={<GuestJoin />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

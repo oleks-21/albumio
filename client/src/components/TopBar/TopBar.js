@@ -25,6 +25,7 @@ import BrandMark from '../common/BrandMark';
 import ColorModeToggle from '../common/ColorModeToggle';
 
 const LIBRARY_PATH = '/album_display';
+const EVENTS_PATH = '/events';
 
 const navLinkSx = (active) => ({
   color: active ? tokens.text : tokens.textSecondary,
@@ -39,6 +40,7 @@ export default function TopBar({ onOpenAuth }) {
   const email = useSelector(state => state.user.email);
   const name = useSelector(state => state.user.name);
   const isLoggedIn = useSelector(state => state.user.isLoggedIn);
+  const eventAlbums = useSelector(state => state.user.features.eventAlbums);
   const navigate = useNavigate();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -46,8 +48,11 @@ export default function TopBar({ onOpenAuth }) {
 
   const displayName = name || email;
   const onLibrary = location.pathname === LIBRARY_PATH;
+  const onEvents = location.pathname.startsWith(EVENTS_PATH);
   // Workspace pages use the full window width; marketing pages are centered.
-  const wide = onLibrary || location.pathname === '/edit';
+  const wide = onLibrary || onEvents || location.pathname === '/edit';
+  // Guests arriving from an invitation see no account or library navigation.
+  const guestChrome = !isLoggedIn && (location.pathname === '/join' || onEvents);
 
   const handleLogout = () => {
     setAccountAnchor(null);
@@ -63,17 +68,18 @@ export default function TopBar({ onOpenAuth }) {
     onOpenAuth?.(mode);
   };
 
-  const links = isLoggedIn
+  const links = guestChrome ? [] : isLoggedIn
     ? [
         { label: 'Home', to: '/' },
         { label: 'My library', to: LIBRARY_PATH },
+        ...(eventAlbums ? [{ label: 'Event albums', to: EVENTS_PATH }] : []),
         { label: 'About', to: '/about' },
       ]
     : [
         { label: 'How it works', to: { pathname: '/', hash: '#how-it-works' } },
         { label: 'About', to: '/about' },
       ];
-  const isActive = (to) => typeof to === 'string' && location.pathname === to;
+  const isActive = (to) => typeof to === 'string' && (location.pathname === to || (to === EVENTS_PATH && onEvents));
 
   return (
     <>
@@ -130,10 +136,10 @@ export default function TopBar({ onOpenAuth }) {
 
           {/* Actions */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ColorModeToggle sx={{ display: { xs: 'none', md: 'inline-flex' } }} />
-            {isLoggedIn ? (
+            <ColorModeToggle sx={{ display: guestChrome ? 'inline-flex' : { xs: 'none', md: 'inline-flex' } }} />
+            {guestChrome ? null : isLoggedIn ? (
               <>
-                {!onLibrary && (
+                {!onLibrary && !onEvents && (
                   <Button variant="contained" component={RouterLink} to={LIBRARY_PATH}>
                     Open library
                   </Button>
@@ -167,15 +173,17 @@ export default function TopBar({ onOpenAuth }) {
                 </Button>
               </>
             )}
-            <IconButton
-              aria-label="Open menu"
-              aria-controls={drawerOpen ? 'site-menu' : undefined}
-              aria-expanded={drawerOpen}
-              onClick={() => setDrawerOpen(true)}
-              sx={{ display: { md: 'none' }, color: tokens.text, width: 44, height: 44 }}
-            >
-              <MenuIcon />
-            </IconButton>
+            {!guestChrome && (
+              <IconButton
+                aria-label="Open menu"
+                aria-controls={drawerOpen ? 'site-menu' : undefined}
+                aria-expanded={drawerOpen}
+                onClick={() => setDrawerOpen(true)}
+                sx={{ display: { md: 'none' }, color: tokens.text, width: 44, height: 44 }}
+              >
+                <MenuIcon />
+              </IconButton>
+            )}
           </Box>
         </Box>
       </AppBar>
