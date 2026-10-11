@@ -2,7 +2,9 @@ import { render, screen, within, waitFor, fireEvent } from '@testing-library/rea
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import App from './App';
-import store, { login, logout } from './store/store';
+import store, { authChanged } from './store/store';
+import { setAuthClient } from './auth/authClient';
+import { fakeAuth } from './testUtils';
 
 const PHOTOS = [
   { name: 'beach.jpg', url: 'https://img.test/beach.jpg', collection: 'Summer' },
@@ -26,7 +28,7 @@ function mockApi(overrides = {}) {
     const method = options.method || 'GET';
     let body = options.body;
     if (typeof body === 'string') body = JSON.parse(body);
-    calls.push({ method, pathname, body });
+    calls.push({ method, pathname, body, authorization: options.headers?.Authorization });
     const key = `${method} ${pathname}`;
     if (overrides[key]) return overrides[key](body);
     switch (key) {
@@ -35,7 +37,7 @@ function mockApi(overrides = {}) {
         photos = photos.map((p) => (p.name === body.oldName ? { ...p, name: body.newName } : p));
         return json({ success: true });
       case 'GET /api/user-presets': return json(['Favourites']);
-      case 'GET /api/user-name': return json({ name: 'Test User' });
+      case 'GET /api/me': return json({ name: 'Test User', libraryStatus: 'ready', features: { eventAlbums: true } });
       case 'GET /api/preset-images': return json({ imageIds: ['cabin.jpg'] });
       default: return json({ success: true });
     }
@@ -68,8 +70,10 @@ beforeAll(() => {
   global.URL.revokeObjectURL = jest.fn();
 });
 
+beforeEach(() => setAuthClient(fakeAuth(null)));
+
 afterEach(() => {
-  store.dispatch(logout());
+  store.dispatch(authChanged(null));
   jest.restoreAllMocks();
 });
 
@@ -102,7 +106,31 @@ describe('color mode', () => {
 });
 
 describe('library', () => {
-  beforeEach(() => store.dispatch(login('tester@example.com')));
+  const tester = { uid: 'u1', email: 'tester@example.com', name: 'Tester', emailVerified: true };
+  beforeEach(() => {
+    setAuthClient(fakeAuth(tester));
+    store.dispatch(authChanged(tester));
+  });
+
+  test('every library request carries the host token and no email', async () => {
+    const calls = mockApi();
+    renderAt('/album_display');
+    await screen.findByRole('list', { name: 'Photos' });
+    const libraryCalls = calls.filter((c) => c.pathname.startsWith('/api/'));
+    expect(libraryCalls.length).toBeGreaterThan(0);
+    libraryCalls.forEach((c) => {
+      expect(c.authorization).toBe('Bearer test-id-token');
+      expect(JSON.stringify(c.body || {})).not.toContain('tester@example.com');
+    });
+    expect(calls.some((c) => c.pathname === '/api/my-images')).toBe(true);
+  });
+
+  test('a library waiting for email confirmation explains the next step', async () => {
+    mockApi({ 'GET /api/me': () => json({ name: 'Tester', libraryStatus: 'email_verification_required', features: {} }) });
+    renderAt('/album_display');
+    expect(await screen.findByText(/Confirm your email to reconnect your photos/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Send the email again' })).toBeInTheDocument();
+  });
 
   test('defaults to all photos and filters collections without touching the grid selection', async () => {
     mockApi();

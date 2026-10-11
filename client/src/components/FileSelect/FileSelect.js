@@ -1,6 +1,5 @@
-import { API_BASE } from '../../api';
+import { request, readJson, errorMessage } from '../../api';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -44,7 +43,6 @@ let nextId = 0;
  * failed files for Retry. It cannot be closed while uploads are running.
  */
 export default function FileSelect({ open, onClose, existingNames = [], collections = [], defaultCollection = '', onUploaded }) {
-  const email = useSelector(state => state.user.email);
   const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'));
   const [items, setItems] = useState([]);
   const [collection, setCollection] = useState('');
@@ -92,15 +90,13 @@ export default function FileSelect({ open, onClose, existingNames = [], collecti
     patch(item.id, { status: 'uploading', error: '' });
     const formData = new FormData();
     formData.append('image', item.file);
-    formData.append('email', email);
     formData.append('fileName', item.file.name);
     formData.append('collection', collectionName);
     try {
-      const response = await fetch(`${API_BASE}/api/upload-image`, { method: 'POST', body: formData });
-      let result = {};
-      try { result = await response.json(); } catch { /* non-JSON error page */ }
+      const response = await request('/api/upload-image', { method: 'POST', body: formData, timeout: 120000 });
+      const result = await readJson(response);
       if (!response.ok || !result.url) {
-        patch(item.id, { status: 'failed', error: result.message || `Upload failed (${response.status}).` });
+        patch(item.id, { status: 'failed', error: errorMessage(result, `Upload failed (${response.status}).`) });
         return;
       }
       patch(item.id, { status: 'done' });

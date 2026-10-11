@@ -22,6 +22,7 @@ import CollectionDisplay, { collectionCounts, collectionLabel } from '../Collect
 import SavedSlideshowList, { SaveSlideshowDialog } from '../Preset/Preset';
 import usePresets from '../Preset/usePresets';
 import ConfirmDialog from '../common/ConfirmDialog';
+import LibraryAccessNotice from './LibraryAccessNotice';
 import { tokens, palettes } from '../../theme';
 
 const compareNames = (a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base', numeric: true });
@@ -34,12 +35,15 @@ const focusThumbnail = (name) => {
 };
 
 export default function Album() {
+  const uid = useSelector(state => state.user.uid);
   const email = useSelector(state => state.user.email);
+  const libraryStatus = useSelector(state => state.user.libraryStatus);
   const navigate = useNavigate();
   const {
     images, loading, error, fetchImages, addImages, deleteImage, renameImage, updateCollection,
-  } = useLibraryImages(email);
-  const presetsApi = usePresets(email);
+  } = useLibraryImages(uid);
+  const presetsApi = usePresets(uid);
+  const libraryWaiting = ['email_verification_required', 'legacy_review_required', 'legacy_already_linked'].includes(libraryStatus);
 
   // Browsing state
   const [search, setSearch] = useState('');
@@ -217,7 +221,15 @@ export default function Album() {
   const firstLoad = loading && images.length === 0;
 
   let body;
-  if (firstLoad) {
+  if (libraryWaiting) {
+    body = (
+      <LibraryAccessNotice
+        status={libraryStatus}
+        email={email}
+        onReady={() => { fetchImages(); presetsApi.refresh(); }}
+      />
+    );
+  } else if (firstLoad) {
     body = (
       <ul className="library-grid" aria-busy="true" aria-label="Loading photos">
         {Array.from({ length: 8 }, (_, i) => (

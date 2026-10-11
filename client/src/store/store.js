@@ -1,66 +1,59 @@
 import { configureStore, createSlice } from '@reduxjs/toolkit';
 
-const STORAGE_KEY = 'albumio.auth';
-
 /**
- * Rehydrate auth from localStorage so a page refresh doesn't drop the session
- * (which would bounce the user out of protected routes).
+ * Mirrors the host's Firebase sign-in state for the UI. It never decides
+ * authorization: the API verifies an ID token on every request.
  *
- * NOTE: this is a UX convenience, not security. There is no server-issued
- * token — `isLoggedIn` is a client flag. Real auth requires backend sessions.
+ * status: 'loading' until Firebase reports the initial state, then
+ * 'signedIn' | 'signedOut'. libraryStatus comes from /api/me ('ready', or a
+ * reason the personal library is waiting, e.g. 'email_verification_required').
  */
-const loadAuth = () => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return undefined;
-    const parsed = JSON.parse(raw);
-    if (parsed && typeof parsed.email === 'string') {
-      return { email: parsed.email, isLoggedIn: Boolean(parsed.isLoggedIn) };
-    }
-  } catch {
-    /* ignore malformed / unavailable storage */
-  }
-  return undefined;
+const signedOut = {
+  status: 'signedOut',
+  isLoggedIn: false,
+  uid: '',
+  email: '',
+  name: '',
+  emailVerified: false,
+  libraryStatus: 'unknown',
+  features: { eventAlbums: false },
 };
 
 const userSlice = createSlice({
   name: 'user',
-  initialState: loadAuth() || {
-    email: '',
-    isLoggedIn: false,
-  },
+  initialState: { ...signedOut, status: 'loading' },
   reducers: {
-    login: (state, action) => {
-      state.email = action.payload;
-      state.isLoggedIn = true;
+    authChanged: (state, action) => {
+      const user = action.payload;
+      if (!user) return signedOut;
+      const switched = state.uid !== user.uid;
+      return {
+        ...state,
+        status: 'signedIn',
+        isLoggedIn: true,
+        uid: user.uid,
+        email: user.email,
+        name: user.name || (switched ? '' : state.name),
+        emailVerified: user.emailVerified,
+        ...(switched ? { libraryStatus: 'unknown', features: signedOut.features } : {}),
+      };
     },
-    logout: (state) => {
-      state.email = '';
-      state.isLoggedIn = false;
+    profileLoaded: (state, action) => {
+      const { name, libraryStatus, features, emailVerified } = action.payload;
+      if (name) state.name = name;
+      if (typeof emailVerified === 'boolean') state.emailVerified = emailVerified;
+      state.libraryStatus = libraryStatus;
+      state.features = { ...signedOut.features, ...features };
     },
   },
 });
 
-export const { login, logout } = userSlice.actions;
+export const { authChanged, profileLoaded } = userSlice.actions;
 
 const store = configureStore({
   reducer: {
     user: userSlice.reducer,
   },
-});
-
-// Persist auth changes so they survive reloads.
-store.subscribe(() => {
-  try {
-    const { user } = store.getState();
-    if (user.isLoggedIn) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  } catch {
-    /* storage unavailable (private mode / disabled) — non-fatal */
-  }
 });
 
 export default store;

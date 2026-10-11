@@ -10,6 +10,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme, { HEADER_HEIGHT } from './theme';
+import useAuthSync from './auth/useAuthSync';
 
 // Code-split the routes that aren't part of the first paint. MainPage (the
 // landing page) and TopBar stay eager; the logged-in Album subtree, the canvas
@@ -19,10 +20,12 @@ const EditImage = lazy(() => import('./components/EditImage/EditImage'));
 const About = lazy(() => import('./components/About/About'));
 const NotFound = lazy(() => import('./components/NotFound/NotFound'));
 
-// Defined at module scope so it isn't recreated on every App render.
+// Defined at module scope so it isn't recreated on every App render. Waits
+// for Firebase to report the initial sign-in state before deciding.
 function ProtectedRoute({ children }) {
-  const isLoggedIn = useSelector(state => state.user.isLoggedIn);
-  return isLoggedIn ? children : <Navigate to="/" replace />;
+  const status = useSelector(state => state.user.status);
+  if (status === 'loading') return <RouteFallback />;
+  return status === 'signedIn' ? children : <Navigate to="/" replace />;
 }
 
 function RouteFallback() {
@@ -34,6 +37,7 @@ function RouteFallback() {
 }
 
 export default function App() {
+  useAuthSync();
   // One auth dialog shared by the header and the homepage hero.
   const [auth, setAuth] = useState({ open: false, register: false });
   const openAuth = useCallback((mode) => setAuth({ open: true, register: mode === 'register' }), []);

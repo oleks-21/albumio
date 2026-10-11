@@ -1,5 +1,4 @@
-import { API_BASE } from '../../api';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -18,8 +17,8 @@ import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useSelector, useDispatch } from 'react-redux';
-import { logout } from '../../store/store';
+import { useSelector } from 'react-redux';
+import { getAuthClient } from '../../auth/authClient';
 import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
 import { tokens, HEADER_HEIGHT } from '../../theme';
 import BrandMark from '../common/BrandMark';
@@ -38,29 +37,12 @@ const navLinkSx = (active) => ({
 
 export default function TopBar({ onOpenAuth }) {
   const email = useSelector(state => state.user.email);
+  const name = useSelector(state => state.user.name);
   const isLoggedIn = useSelector(state => state.user.isLoggedIn);
-  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const [name, setName] = useState('');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [accountAnchor, setAccountAnchor] = useState(null);
-
-  useEffect(() => {
-    const fetchName = async () => {
-      try {
-        const response = await fetch(`${API_BASE}/api/user-name?email=${encodeURIComponent(email)}`);
-        const data = await response.json();
-        setName(response.ok && data.name ? data.name : email);
-      } catch (err) {
-        setName(email);
-      }
-    };
-
-    if (isLoggedIn && email) {
-      fetchName();
-    }
-  }, [isLoggedIn, email]);
 
   const displayName = name || email;
   const onLibrary = location.pathname === LIBRARY_PATH;
@@ -70,7 +52,7 @@ export default function TopBar({ onOpenAuth }) {
   const handleLogout = () => {
     setAccountAnchor(null);
     setDrawerOpen(false);
-    dispatch(logout());
+    getAuthClient().signOut().catch(() => {});
     navigate('/');
   };
 
