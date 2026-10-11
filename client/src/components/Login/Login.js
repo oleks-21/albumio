@@ -8,7 +8,9 @@ import Stack from '@mui/material/Stack';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
+import { useDispatch } from 'react-redux';
 import { getAuthClient } from '../../auth/authClient';
+import { authChanged } from '../../store/store';
 import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -25,6 +27,7 @@ const Login = ({ open, register, handleClose, onSwitchMode }) => {
   const [submitting, setSubmitting] = useState(false);
   const [notice, setNotice] = useState('');
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'));
 
   // Reset form state whenever the dialog is (re)opened or the mode switches,
@@ -61,7 +64,10 @@ const Login = ({ open, register, handleClose, onSwitchMode }) => {
 
   const handleRegister = async () => {
     try {
-      await getAuthClient().register(name.trim(), email.trim(), password);
+      // Firebase reports the new user before its display name is set, so
+      // pass the completed profile on.
+      const user = await getAuthClient().register(name.trim(), email.trim(), password);
+      if (user) dispatch(authChanged(user));
       handleClose();
       navigate('/album_display');
     } catch (err) {
