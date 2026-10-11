@@ -303,3 +303,28 @@
   border: 1px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
   box-shadow: 0 10px 30px rgba(var(--shadow-rgb), 0.3);
 }
+
+/* Status badges on a tile (e.g. "Hidden", "Cover") */
+.photo-card__badges {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  pointer-events: none;
+}
+
+.photo-card__badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--color-overlay-control);
+  color: var(--color-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+
+.photo-card.is-dimmed .photo-card__open img.is-loaded {
+  opacity: 0.55;
+}

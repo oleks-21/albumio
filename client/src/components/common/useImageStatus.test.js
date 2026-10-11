@@ -49,3 +49,38 @@ describe('useImageStatus', () => {
     jest.useRealTimers();
   });
 });
+
+describe('useImageStatus with an identity', () => {
+  function Signed({ src, id }) {
+    const img = useImageStatus(src, { identity: id, bust: false });
+    return (
+      <div>
+        <span data-testid="status">{img.status}</span>
+        {img.status !== 'error' && (
+          <img key={img.key} src={img.src} alt="" data-testid="img" onLoad={img.onLoad} onError={img.onError} />
+        )}
+        <button type="button" onClick={img.retry}>retry</button>
+      </div>
+    );
+  }
+
+  test('a loaded image keeps its URL when a refreshed URL for the same photo arrives', () => {
+    const { rerender } = render(<Signed src="https://img.test/a?sig=1" id="p1" />);
+    fireEvent.load(screen.getByTestId('img'));
+    rerender(<Signed src="https://img.test/a?sig=2" id="p1" />);
+    expect(screen.getByTestId('status')).toHaveTextContent('loaded');
+    expect(screen.getByTestId('img')).toHaveAttribute('src', 'https://img.test/a?sig=1');
+  });
+
+  test('a failed image switches to the refreshed URL, and retries never edit a signed URL', () => {
+    const { rerender } = render(<Signed src="https://img.test/a?sig=1" id="p1" />);
+    fireEvent.error(screen.getByTestId('img'));
+    expect(screen.getByTestId('status')).toHaveTextContent('error');
+    fireEvent.click(screen.getByText('retry'));
+    expect(screen.getByTestId('img')).toHaveAttribute('src', 'https://img.test/a?sig=1');
+    fireEvent.error(screen.getByTestId('img'));
+    rerender(<Signed src="https://img.test/a?sig=2" id="p1" />);
+    expect(screen.getByTestId('status')).toHaveTextContent('loading');
+    expect(screen.getByTestId('img')).toHaveAttribute('src', 'https://img.test/a?sig=2');
+  });
+});

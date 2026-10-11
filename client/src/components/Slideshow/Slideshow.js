@@ -21,14 +21,15 @@ const HIDE_AFTER_MS = 3000;
 const isTyping = (el) => el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable);
 const canFullscreen = typeof document !== 'undefined' && Boolean(document.fullscreenEnabled);
 
-function Slide({ photo, onSkip }) {
-  const img = useImageStatus(photo.url);
+function Slide({ photo, onSkip, signed, onImageRetry }) {
+  const img = useImageStatus(photo.url, { identity: photo.id, bust: !signed });
+  const title = photo.title ?? photo.name;
   if (img.status === 'error') {
     return (
       <div className="slideshow__failed">
-        <Typography>“{photo.name}” didn’t load.</Typography>
+        <Typography>“{title}” didn’t load.</Typography>
         <div>
-          <Button variant="outlined" onClick={img.retry} sx={{ mr: 1 }}>Retry</Button>
+          <Button variant="outlined" onClick={() => { img.retry(); onImageRetry?.(photo); }} sx={{ mr: 1 }}>Retry</Button>
           {onSkip && <Button onClick={onSkip}>Skip</Button>}
         </div>
       </div>
@@ -39,7 +40,7 @@ function Slide({ photo, onSkip }) {
       key={img.key}
       ref={img.ref}
       src={img.src}
-      alt={photo.name}
+      alt={title}
       onLoad={img.onLoad}
       onError={img.onError}
       className={`slideshow__image${img.status === 'loaded' ? ' is-loaded' : ''}`}
@@ -49,9 +50,10 @@ function Slide({ photo, onSkip }) {
 
 /**
  * Full-screen slideshow over the library's current visible photos. Starts
- * paused; Space plays/pauses, arrows navigate, Escape closes.
+ * paused; Space plays/pauses, arrows navigate, Escape closes. Event albums
+ * pass `signed` URLs and `onImageRetry` to refresh an expired one.
  */
-export default function Slideshow({ images, scopeLabel = 'all photos', onClose }) {
+export default function Slideshow({ images, scopeLabel = 'all photos', onClose, signed = false, onImageRetry }) {
   const [index, setIndex] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [interval, setIntervalMs] = useState(5000);
@@ -164,7 +166,7 @@ export default function Slideshow({ images, scopeLabel = 'all photos', onClose }
           </div>
 
           <div className="slideshow__stage" key={index} aria-live={playing ? 'off' : 'polite'}>
-            <Slide photo={photo} onSkip={count > 1 ? () => go(1) : null} />
+            <Slide photo={photo} onSkip={count > 1 ? () => go(1) : null} signed={signed} onImageRetry={onImageRetry} />
           </div>
 
           <div className="slideshow__dock" ref={dockRef} role="toolbar" aria-label="Slideshow controls">

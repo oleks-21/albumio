@@ -36,10 +36,15 @@ function FieldStatus({ state }) {
 /**
  * Photo viewer. Large uncropped image with previous/next over the current
  * visible list, plus a details panel for rename / collection / edit.
+ *
+ * Event albums pass `renderDetails` for their own panel (attribution and only
+ * the actions the viewer's capabilities allow), and `signed` URLs that
+ * `onImageRetry` refreshes.
  */
 export default function Preview({
   photos, index, onIndexChange, onClose, onRename, onCollectionSave, onEdit,
   collections = [], existingNames = [], hasSavedSlideshows,
+  renderDetails, detailsLabel = 'Details and editing', signed = false, onImageRetry,
 }) {
   const photo = photos[index];
   const isWide = useMediaQuery(viewerTheme.breakpoints.up('md'));
@@ -48,7 +53,7 @@ export default function Preview({
   const [collection, setCollection] = useState(photo?.collection || '');
   const [nameState, setNameState] = useState({ status: 'idle' });
   const [collectionState, setCollectionState] = useState({ status: 'idle' });
-  const img = useImageStatus(photo?.url);
+  const img = useImageStatus(photo?.url, { identity: photo?.id, bust: !signed });
 
   // Reset the form when moving to another photo. Keyed on position only, so a
   // rename (which also refreshes the URL) keeps its success message.
@@ -104,7 +109,13 @@ export default function Preview({
     }
   };
 
-  const details = (
+  const title = photo.title ?? photo.name;
+  const retryImage = () => {
+    img.retry();
+    onImageRetry?.(photo);
+  };
+
+  const details = renderDetails ? renderDetails(photo) : (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
       <Button
         variant="contained"
@@ -176,8 +187,8 @@ export default function Preview({
             <Typography variant="body2" sx={{ color: tokens.viewerTextSecondary, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
               {index + 1} of {count}
             </Typography>
-            <Typography id="preview-title" component="h2" variant="h6" noWrap title={photo.name} sx={{ flex: 1, minWidth: 0 }}>
-              {photo.name}
+            <Typography id="preview-title" component="h2" variant="h6" noWrap title={title} sx={{ flex: 1, minWidth: 0 }}>
+              {title}
             </Typography>
             <IconButton aria-label="Close viewer" onClick={onClose} sx={{ width: 44, height: 44 }}>
               <CloseIcon />
@@ -191,7 +202,7 @@ export default function Preview({
                   key={img.key}
                   ref={img.ref}
                   src={img.src}
-                  alt={photo.name}
+                  alt={title}
                   onLoad={img.onLoad}
                   onError={img.onError}
                   className={img.status === 'loaded' ? 'is-loaded' : ''}
@@ -204,7 +215,7 @@ export default function Preview({
                 <div className="preview__failed">
                   <BrokenImageOutlinedIcon sx={{ fontSize: 40 }} aria-hidden />
                   <Typography>This photo didn’t load.</Typography>
-                  <Button variant="outlined" onClick={img.retry}>Retry</Button>
+                  <Button variant="outlined" onClick={retryImage}>Retry</Button>
                 </div>
               )}
               {count > 1 && (
@@ -232,7 +243,7 @@ export default function Preview({
                     endIcon={<ExpandMoreIcon sx={{ transform: detailsOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />}
                     sx={{ justifyContent: 'space-between', color: tokens.viewerText, minHeight: 48 }}
                   >
-                    Details and editing
+                    {detailsLabel}
                   </Button>
                   <Collapse in={detailsOpen} id="preview-details">
                     <Box sx={{ pt: 2 }}>{details}</Box>

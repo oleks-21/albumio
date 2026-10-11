@@ -86,3 +86,21 @@
   gap: 4px;
   flex-shrink: 0;
 }
+
+/* Inline variant (guest upload on the event page) */
+.upload-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.upload-inline__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.upload-list.is-inline {
+  max-height: none;
+}

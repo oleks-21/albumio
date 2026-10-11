@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 const LOAD_TIMEOUT_MS = 20000;
 
-const initial = (src) => ({ src, attempt: 0, status: src ? 'loading' : 'error' });
+const initial = (src, identity) => ({ src, identity, attempt: 0, status: src ? 'loading' : 'error' });
 
 /**
  * Tracks one <img>'s lifecycle so the UI never shows an indefinitely blank
@@ -12,18 +12,27 @@ const initial = (src) => ({ src, attempt: 0, status: src ? 'loading' : 'error' }
  * Spread `ref`, `onLoad` and `onError` onto the <img>. The ref matters: a
  * cached image can finish loading before React has run effects for it, so
  * the element's own `complete` flag is checked when it mounts.
+ *
+ * `identity` (e.g. a photo ID) marks URLs that name the same image, such as
+ * refreshed signed URLs. An image that already loaded keeps its current URL
+ * instead of flashing to reload; one that failed switches to the new URL.
+ * Signed URLs pass `bust: false`: a cache-busting parameter would break the
+ * signature, so their retries rely on the caller fetching a fresh URL.
  */
-export default function useImageStatus(src, { timeout = LOAD_TIMEOUT_MS } = {}) {
-  const [state, setState] = useState(() => initial(src));
+export default function useImageStatus(propSrc, { timeout = LOAD_TIMEOUT_MS, identity, bust = true } = {}) {
+  const [state, setState] = useState(() => initial(propSrc, identity));
 
   // Reset during render when the source changes. Doing this in an effect let a
   // late-running effect overwrite a 'loaded' status that had already arrived.
   let current = state;
-  if (state.src !== src) {
-    current = initial(src);
-    setState(current);
+  if (state.src !== propSrc) {
+    const keepLoaded = identity !== undefined && state.identity === identity && state.status === 'loaded';
+    if (!keepLoaded) {
+      current = initial(propSrc, identity);
+      setState(current);
+    }
   }
-  const { status, attempt } = current;
+  const { status, attempt, src } = current;
 
   useEffect(() => {
     if (status !== 'loading') return undefined;
@@ -54,7 +63,7 @@ export default function useImageStatus(src, { timeout = LOAD_TIMEOUT_MS } = {}) 
   );
 
   let requestSrc = src;
-  if (src && attempt > 0) {
+  if (bust && src && attempt > 0) {
     requestSrc = `${src}${src.includes('?') ? '&' : '?'}retry=${attempt}`;
   }
 
