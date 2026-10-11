@@ -40,6 +40,15 @@ const STEPS = [
   },
 ];
 
+// Shown only once event albums are live (set at build time).
+const SHOW_EVENT_ALBUMS = process.env.REACT_APP_EVENT_ALBUMS === 'true';
+
+const EVENT_POINTS = [
+  { title: 'Share one link or QR code', text: 'Print it on a table card or send it to the group chat.' },
+  { title: 'Guests just add photos', text: 'From their phone, with no app and no account.' },
+  { title: 'You decide who sees what', text: 'Each link can add, view or download — and you can switch it off anytime.' },
+];
+
 const GALLERY = [
   { src: 'fjord.jpg', alt: 'A deep blue fjord between steep cliffs', w: 1000, h: 667, className: 'home-gallery__item--big' },
   { src: 'harbour-lane.jpg', alt: 'A narrow stone lane opening onto the sea', w: 800, h: 1200, className: 'home-gallery__item--tall' },
@@ -200,6 +209,36 @@ export default function MainPage({ onOpenAuth }) {
           </div>
         </SectionContainer>
       </Box>
+
+      {SHOW_EVENT_ALBUMS && (
+        <Box component="section" aria-labelledby="events-title" sx={{ pb: { xs: 7, md: 12 } }}>
+          <SectionContainer>
+            <Reveal>
+              <Typography id="events-title" variant="h2" sx={{ fontSize: { xs: '1.875rem', md: '2.5rem' }, mb: 1.5 }}>
+                Every guest’s photos, in one album
+              </Typography>
+              <Typography sx={{ color: tokens.textSecondary, maxWidth: 620, mb: { xs: 3, md: 4 } }}>
+                For weddings, trips, reunions and parties: create a private event album and let everyone add what they captured.
+              </Typography>
+            </Reveal>
+            <Box component="ul" sx={{ listStyle: 'none', p: 0, m: 0, display: 'grid', gap: 2, gridTemplateColumns: { xs: '1fr', md: 'repeat(3, 1fr)' } }}>
+              {EVENT_POINTS.map((point) => (
+                <Box component="li" key={point.title} sx={{ p: 2.5, borderRadius: 3, border: `1px solid ${tokens.border}`, bgcolor: tokens.surface }}>
+                  <Typography variant="h3" sx={{ fontSize: '1.125rem', mb: 0.5 }}>{point.title}</Typography>
+                  <Typography sx={{ color: tokens.textSecondary }}>{point.text}</Typography>
+                </Box>
+              ))}
+            </Box>
+            <Box sx={{ mt: 3 }}>
+              {isLoggedIn ? (
+                <Button variant="outlined" size="large" component={RouterLink} to="/events">Create an event album</Button>
+              ) : (
+                <Button variant="outlined" size="large" onClick={() => onOpenAuth?.('register')}>Create an account to start</Button>
+              )}
+            </Box>
+          </SectionContainer>
+        </Box>
+      )}
 
       {/* Closing action */}
       <Box component="section" aria-labelledby="cta-title" sx={{ pb: { xs: 7, md: 12 } }}>
