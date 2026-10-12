@@ -3,43 +3,46 @@
 A host creates a private event album and shares a link or QR code. Guests open
 it on their phones and add photos without creating an account. Each link sets
 what its guests can do: **add**, **view** and **download**. This is the
-implementation of the collaborative event albums plan. Deploying and migrating
-are separate steps; see [`../EVENT_ALBUMS_RUNBOOK.md`](../EVENT_ALBUMS_RUNBOOK.md).
+implementation of the collaborative event albums plan. Enabling it is a
+separate step; see [`../EVENT_ALBUMS_RUNBOOK.md`](../EVENT_ALBUMS_RUNBOOK.md).
 
-The screenshots below come from a real run against the Firebase Auth and
-Firestore emulators. The API used its signed local media store, and the photos
-are the Unsplash samples in `client/public/images/samples`.
+The screenshots below come from a real run against the Firestore emulator. The
+API used its signed local media store, and the photos are the Unsplash samples
+in `client/public/images/samples`.
+
+> **Revised 2026-10-12.** The first version replaced the library's login with
+> Firebase Authentication. Render deployed it before Firebase was set up and
+> before the matching client was released, which broke the live library, so
+> it was rolled back. Event albums now sit **next to** the unchanged library,
+> as described under "Foundation".
 
 ## What was built
 
 ### Foundation (Phase 1)
 
-- **Host sign-in.** Hosts sign in with Firebase Authentication (email and
-  password).
-  - The client keeps no login flag of its own. Redux mirrors the Firebase
-    session, with an initial `loading` state that route guards wait for.
-  - `api.js` sends the ID token as `Authorization: Bearer`. A 401 is retried
-    once with a refreshed token.
-  - Every library, preset and upload call goes through `request()`. Calls no
-    longer send an email.
-- **API access control.** The API verifies every host token with the Admin
-  SDK.
-  - Personal-library routes use the library mapped to that sign-in. An email
-    in the request is rejected when it doesn't match.
-  - Guest tokens (`albg_…`) are refused on every host and library route.
-- **Legacy accounts.** A legacy account maps to a sign-in only with a
-  verified email and an unambiguous record.
-  - Case-variant duplicates and folder-name collisions are held for manual
-    review.
-  - `legacyLinks` makes sure one library links to one sign-in.
-  - Saved slideshows are scoped to their owner.
-  - `/register` and `/api/login` answer `410`, and the password column is no
-    longer read.
+- **The personal library is unchanged.** Its routes and the client calls that
+  use them work exactly as before, including the email-based requests. Old
+  and new clients both keep working.
+- **Host sign-in for event albums.**
+  - The existing `/api/login` and `/register` also return a signed host
+    session token (`albh_…`, HMAC, valid for 30 days).
+  - The client keeps the token with the session and sends it as
+    `Authorization: Bearer` on event-album requests only.
+  - The token is issued only when exactly one account row has that email, and
+    registering an existing email is now refused. A duplicate row therefore
+    can't act as someone else's host.
+  - A host who signed in before this change is asked to log in once more.
+- **Isolation.** Event routes check host and guest tokens on every request
+  and refuse guest tokens on host routes.
+  - Event albums load only when `EVENT_ALBUMS_ENABLED=true`.
+  - If they fail to load (missing Firestore credentials, for example), the API
+    turns them off and the library keeps running.
+  - `GET /api/features` tells the web app whether to show them.
 - **Server structure.**
   - `server/app.js` is an importable app with injected services.
+  - The library routes live in `routes/legacy.js`.
   - Firestore rules deny all direct access, and the composite indexes are
     checked in.
-  - `EVENT_ALBUMS_ENABLED` gates every event route.
 
 ### Hosts (Phase 2)
 
@@ -121,20 +124,21 @@ are the Unsplash samples in `client/public/images/samples`.
 
 | Check | Result |
 | --- | --- |
-| `server`: `npm test` (in-memory) | 56 tests pass |
-| `server`: `npm run test:emulators` (Firestore + Auth emulators, real ID tokens) | 55 pass, 1 skipped: two accounts can't share an email in the Auth emulator |
-| `client`: `CI=true npm test` | 24 tests pass |
+| `server`: `npm test` (in-memory) | 54 tests pass |
+| `server`: `npm run test:emulators` (Firestore emulator) | 54 tests pass |
+| `server`: boot `index.js` with event albums off, and on without Firestore credentials | The library routes work in both cases; in the second, event albums switch off and the API logs `event_albums_unavailable` |
+| `client`: `CI=true npm test` | 25 tests pass |
 | `client`: `CI=true npm run build` | Compiles with no warnings |
-| Browser run (Chrome, emulators) | Host registers, creates an event, and creates an add+view link and an upload-only link. A guest on a phone joins (the secret is gone from the URL; the token is in sessionStorage only) and uploads 2 photos. The upload-only guest uploads with no gallery. The host revokes the link, and the open guest tab loses access on its next request. |
+| Browser run (Chrome, Firestore emulator, fake library modules) | Host registers; library requests still carry the email and no token. Host creates an event, an add+view link and an upload-only link. A guest on a phone joins (the secret is gone from the URL; the token is in sessionStorage only) and uploads 2 photos. The upload-only guest uploads with no gallery. The host revokes the link, and the open guest tab loses access on its next request. |
 
-The server suites cover acceptance tests 2–7 and 9–10 from the plan, at the
-API level:
+The server suites cover acceptance tests 2–7 and 9 from the plan, at the API
+level, plus checks that the library routes are unchanged:
 
 - the five valid permission combinations, plus a rejected download-only link;
 - host overrides;
 - denied requests on every route;
 - cross-album and cross-host IDs;
-- forged emails;
+- forged and expired host tokens;
 - upload-only isolation;
 - same-name uploads;
 - concurrent quota;
@@ -155,9 +159,14 @@ API level:
   signed variants and `ik-attachment` downloads follow ImageKit's documented
   API, but they have only been tested through the local signed store. Before
   rollout, check that unsigned, expired and edited-transformation URLs fail.
-- **Production provisioning and migration.** Firebase Auth, Firestore, the
-  service account, the client Firebase config and the legacy-account
-  migration are runbook steps that haven't been carried out.
+- **Library security is unchanged.** The plan's foundation (verified host
+  identity on library routes, owner-scoped presets, no plaintext passwords)
+  is deliberately not applied to the library, so it keeps working exactly as
+  before. Event albums are protected; the library is as exposed as it was.
+  The Firebase-based foundation is on the API's `event-albums` branch for a
+  later, coordinated migration.
+- **Production setup.** Firestore, the rules and indexes, and the ImageKit
+  checks are runbook steps that haven't been carried out.
 - **Shared rate limiting.** Rate limits are kept in memory per instance, which
   is enough for the current single Render instance.
 
