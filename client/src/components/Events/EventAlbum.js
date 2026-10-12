@@ -26,6 +26,8 @@ import { loadGuestSession, clearGuestSession, saveGuestName } from './guestSessi
 import { eventStatus, formatEventDate, formatDateTime, listText, plural, toCardPhoto, toViewerPhoto } from './format';
 import EventSettingsDialog from './EventSettingsDialog';
 import InviteGuestsDialog from './InviteGuestsDialog';
+import HostSignInPrompt from './HostSignInPrompt';
+import { selectHostReady } from '../../store/store';
 import PhotoCard from '../Album/PhotoCard';
 import Preview from '../Preview/Preview';
 import Slideshow from '../Slideshow/Slideshow';
@@ -77,14 +79,15 @@ function GuestNameField({ value, onChange }) {
  * One event album, for its host or a guest. What appears is driven by the
  * capabilities the server returns; the server re-checks every action.
  */
-export default function EventAlbum() {
+export default function EventAlbum({ onOpenAuth }) {
   const { albumId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const hostStatus = useSelector((state) => state.user.status);
+  const isLoggedIn = useSelector((state) => state.user.isLoggedIn);
+  const hostReady = useSelector(selectHostReady);
   const [guest, setGuest] = useState(() => loadGuestSession(albumId));
   const guestToken = guest?.token || null;
-  const canLoad = Boolean(guestToken) || hostStatus === 'signedIn';
+  const canLoad = Boolean(guestToken) || hostReady;
 
   const { event, setEvent, error, loading, reload } = useEvent(albumId, guestToken, canLoad);
   const caps = event?.capabilities;
@@ -244,8 +247,9 @@ export default function EventAlbum() {
   };
 
   /* ---------- Access states ---------- */
-  if (!guestToken && hostStatus === 'loading') {
-    return <Box sx={{ display: 'flex', justifyContent: 'center', py: 10 }}><CircularProgress aria-label="Loading album" /></Box>;
+  // A signed-in host without a valid event-album token signs in again.
+  if (!guestToken && isLoggedIn && (!hostReady || error?.code === 'invalid_token')) {
+    return <div className="event-page"><HostSignInPrompt onOpenAuth={onOpenAuth} /></div>;
   }
   if (!canLoad) {
     return (
@@ -260,7 +264,7 @@ export default function EventAlbum() {
       <EventMessage
         title={network ? 'We couldn’t load this album' : error.status === 404 ? 'This album isn’t available' : 'You can’t open this album right now'}
         action={network ? <Button variant="contained" onClick={() => reload()}>Retry</Button> : (isHost ? null : (
-          guestToken && hostStatus === 'signedIn' ? <Button component={RouterLink} to="/events" variant="outlined">Go to your event albums</Button> : null
+          guestToken && hostReady ? <Button component={RouterLink} to="/events" variant="outlined">Go to your event albums</Button> : null
         ))}
       >
         {error.message}
@@ -344,7 +348,7 @@ export default function EventAlbum() {
 
   return (
     <div className="event-page">
-      {guestToken && hostStatus === 'signedIn' && (
+      {guestToken && hostReady && (
         <Alert severity="info" variant="outlined" sx={{ mb: 2 }} action={<Button color="inherit" size="small" onClick={() => { clearGuestSession(albumId); setGuest(null); }}>Leave guest view</Button>}>
           You’re viewing this album as a guest.
         </Alert>

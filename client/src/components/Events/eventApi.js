@@ -1,19 +1,20 @@
 import { apiJson, request, readJson, errorMessage, ApiError } from '../../api';
 
-// Host requests use the signed-in host's ID token; guest requests use the
+// Host requests use the host token issued at login; guest requests use the
 // album's guest session token instead.
 const as = (guestToken) => (guestToken ? { guest: guestToken } : 'host');
+const hostJson = (path, options) => apiJson(path, { auth: 'host', ...options });
 const base = (id) => `/api/events/${encodeURIComponent(id)}`;
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const eventApi = {
-  list: () => apiJson('/api/events', { fallback: 'We couldn’t load your event albums.' }).then((b) => b.events),
+  list: () => hostJson('/api/events', { fallback: 'We couldn’t load your event albums.' }).then((b) => b.events),
   create: (fields) =>
-    apiJson('/api/events', { method: 'POST', json: fields, fallback: 'Could not create the event.' }).then((b) => b.event),
+    hostJson('/api/events', { method: 'POST', json: fields, fallback: 'Could not create the event.' }).then((b) => b.event),
   get: (id, guestToken) =>
     apiJson(base(id), { auth: as(guestToken), fallback: 'We couldn’t load this album.' }).then((b) => b.event),
   update: (id, changes) =>
-    apiJson(base(id), { method: 'PATCH', json: changes, fallback: 'Could not save the settings.' }).then((b) => b.event),
+    hostJson(base(id), { method: 'PATCH', json: changes, fallback: 'Could not save the settings.' }).then((b) => b.event),
 
   listPhotos: (id, cursor, guestToken) =>
     apiJson(`${base(id)}/photos${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`, {
@@ -21,10 +22,10 @@ export const eventApi = {
       fallback: 'We couldn’t load the photos.',
     }),
   updatePhoto: (id, photoId, changes) =>
-    apiJson(`${base(id)}/photos/${photoId}`, { method: 'PATCH', json: changes, fallback: 'Could not update the photo.' })
+    hostJson(`${base(id)}/photos/${photoId}`, { method: 'PATCH', json: changes, fallback: 'Could not update the photo.' })
       .then((b) => b.photo),
   removePhoto: (id, photoId) =>
-    apiJson(`${base(id)}/photos/${photoId}`, { method: 'DELETE', fallback: 'Could not remove the photo.' }),
+    hostJson(`${base(id)}/photos/${photoId}`, { method: 'DELETE', fallback: 'Could not remove the photo.' }),
   media: (id, photoId, guestToken) =>
     apiJson(`${base(id)}/photos/${photoId}/media`, { method: 'POST', auth: as(guestToken) }).then((b) => b.photo),
   download: (id, photoId, guestToken) =>
@@ -56,14 +57,14 @@ export const eventApi = {
     }
   },
 
-  listInvitations: (id) => apiJson(`${base(id)}/invitations`, { fallback: 'We couldn’t load the invitations.' }).then((b) => b.invitations),
+  listInvitations: (id) => hostJson(`${base(id)}/invitations`, { fallback: 'We couldn’t load the invitations.' }).then((b) => b.invitations),
   createInvitation: (id, fields) =>
-    apiJson(`${base(id)}/invitations`, { method: 'POST', json: fields, fallback: 'Could not create the link.' }),
+    hostJson(`${base(id)}/invitations`, { method: 'POST', json: fields, fallback: 'Could not create the link.' }),
   updateInvitation: (id, inviteId, changes) =>
-    apiJson(`${base(id)}/invitations/${inviteId}`, { method: 'PATCH', json: changes, fallback: 'Could not update the link.' })
+    hostJson(`${base(id)}/invitations/${inviteId}`, { method: 'PATCH', json: changes, fallback: 'Could not update the link.' })
       .then((b) => b.invitation),
   blockSession: (id, sessionId) =>
-    apiJson(`${base(id)}/guest-sessions/${sessionId}/block`, { method: 'POST', fallback: 'Could not turn off that session.' }),
+    hostJson(`${base(id)}/guest-sessions/${sessionId}/block`, { method: 'POST', fallback: 'Could not turn off that session.' }),
   exchange: (secret) =>
     apiJson('/api/event-invitations/exchange', {
       method: 'POST',

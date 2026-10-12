@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -11,6 +12,8 @@ import CreateEventDialog from './CreateEventDialog';
 import { useVisibleRefresh, REFRESH_MS } from './useEventAlbum';
 import { eventStatus, formatEventDate, plural } from './format';
 import useImageStatus from '../common/useImageStatus';
+import HostSignInPrompt from './HostSignInPrompt';
+import { selectHostReady } from '../../store/store';
 import './Events.css';
 
 function EventCover({ event }) {
@@ -32,24 +35,30 @@ function EventCover({ event }) {
 }
 
 /** Host destination listing their event albums, next to "My library". */
-export default function EventAlbums() {
+export default function EventAlbums({ onOpenAuth }) {
   const navigate = useNavigate();
+  const hostReady = useSelector(selectHostReady);
   const [events, setEvents] = useState(null);
   const [error, setError] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
 
   const load = useCallback(async () => {
+    if (!hostReady) return;
     try {
       setEvents(await eventApi.list());
       setError(null);
     } catch (err) {
       setError(err);
     }
-  }, []);
+  }, [hostReady]);
 
   useEffect(() => { load(); }, [load]);
   // Photo counts and covers change as guests upload.
-  useVisibleRefresh(load, REFRESH_MS, true);
+  useVisibleRefresh(load, REFRESH_MS, hostReady);
+
+  if (!hostReady || error?.status === 401) {
+    return <div className="event-page"><HostSignInPrompt onOpenAuth={onOpenAuth} /></div>;
+  }
 
   let body;
   if (error?.code === 'feature_disabled') {

@@ -2,9 +2,7 @@ import { render, screen, within, waitFor, fireEvent } from '@testing-library/rea
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../../App';
-import store, { authChanged } from '../../store/store';
-import { setAuthClient } from '../../auth/authClient';
-import { fakeAuth } from '../../testUtils';
+import store, { login, logout } from '../../store/store';
 
 // QR codes are drawn locally with this library; jsdom has no canvas.
 jest.mock('qrcode', () => ({
@@ -13,6 +11,7 @@ jest.mock('qrcode', () => ({
 }));
 
 const SECRET = 'S'.repeat(43);
+const HOST_TOKEN = 'albh_payload.signature';
 const GUEST_TOKEN = `albg_${'g'.repeat(43)}`;
 
 const json = (body, status = 200) =>
@@ -65,7 +64,8 @@ function mockApi(routes) {
     const key = `${method} ${pathname}`;
     const match = Object.keys(routes).find((k) => k === key || new RegExp(`^${k}$`).test(key));
     if (match) return routes[match](body, { pathname, search });
-    if (key === 'GET /api/me') return json({ name: 'Hana', libraryStatus: 'ready', features: { eventAlbums: true } });
+    if (key === 'GET /api/features') return json({ eventAlbums: true });
+    if (key === 'GET /api/user-name') return json({ name: 'Hana' });
     return apiError(404, 'not_found', 'Not found.');
   });
   return calls;
@@ -89,16 +89,14 @@ beforeAll(() => {
 });
 
 afterEach(() => {
-  store.dispatch(authChanged(null));
+  store.dispatch(logout());
   sessionStorage.clear();
   jest.restoreAllMocks();
 });
 
 describe('host', () => {
-  const host = { uid: 'h1', email: 'hana@example.com', name: 'Hana', emailVerified: true };
   beforeEach(() => {
-    setAuthClient(fakeAuth(host));
-    store.dispatch(authChanged(host));
+    store.dispatch(login({ email: 'hana@example.com', token: HOST_TOKEN, expiresAt: Date.now() + 3600000 }));
   });
 
   test('creates an event and gets a one-time link with a QR code', async () => {
@@ -141,7 +139,7 @@ describe('host', () => {
     expect(post.body.expiresAt - Date.now()).toBeGreaterThan(29 * 24 * 3600 * 1000);
     expect(await within(invite).findByText(/Add · View · Expires/)).toBeInTheDocument();
     // Every host call is authenticated.
-    calls.filter((c) => c.pathname.startsWith('/api/events')).forEach((c) => expect(c.authorization).toBe('Bearer test-id-token'));
+    calls.filter((c) => c.pathname.startsWith('/api/events')).forEach((c) => expect(c.authorization).toBe(`Bearer ${HOST_TOKEN}`));
   });
 
   test('hides a photo from guests and shows guest attribution', async () => {
@@ -164,7 +162,7 @@ describe('host', () => {
 });
 
 describe('guest', () => {
-  beforeEach(() => setAuthClient(fakeAuth(null)));
+  beforeEach(() => store.dispatch(logout()));
 
   test('joining strips the secret, keeps the session out of localStorage, and an upload-only guest sees no gallery', async () => {
     window.history.replaceState(null, '', `/join#invite=${SECRET}`);
@@ -263,5 +261,23 @@ describe('guest', () => {
     mockApi({});
     renderAt('/events/evt12345');
     expect(await screen.findByText('This album is private')).toBeInTheDocument();
+  });
+});
+
+describe('host without an event-album token', () => {
+  test('a host who signed in before event albums is asked to log in again', async () => {
+    store.dispatch(login('hana@example.com')); // an older session: no token
+    mockApi({});
+    renderAt('/events');
+    expect(await screen.findByText('Log in again to use event albums')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Log in again' }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+  });
+
+  test('an expired host token is rejected by the server and the host is asked to log in again', async () => {
+    store.dispatch(login({ email: 'hana@example.com', token: HOST_TOKEN, expiresAt: Date.now() + 3600000 }));
+    mockApi({ 'GET /api/events': () => apiError(401, 'invalid_token', 'Your sign-in has expired. Please sign in again.') });
+    renderAt('/events');
+    expect(await screen.findByText('Log in again to use event albums')).toBeInTheDocument();
   });
 });

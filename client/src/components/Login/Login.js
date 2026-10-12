@@ -9,8 +9,8 @@ import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useDispatch } from 'react-redux';
-import { getAuthClient } from '../../auth/authClient';
-import { authChanged } from '../../store/store';
+import { login } from '../../store/store';
+import { request } from '../../api';
 import Typography from '@mui/material/Typography';
 import Link from '@mui/material/Link';
 import useMediaQuery from '@mui/material/useMediaQuery';
@@ -25,7 +25,6 @@ const Login = ({ open, register, handleClose, onSwitchMode }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [notice, setNotice] = useState('');
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'));
@@ -38,7 +37,6 @@ const Login = ({ open, register, handleClose, onSwitchMode }) => {
       setEmail('');
       setPassword('');
       setError('');
-      setNotice('');
       setSubmitting(false);
     }
   }, [open, register]);
@@ -51,12 +49,22 @@ const Login = ({ open, register, handleClose, onSwitchMode }) => {
     return '';
   };
 
-  // The auth listener in App updates the store; the dialog only navigates.
   const handleLogin = async () => {
     try {
-      await getAuthClient().signIn(email.trim(), password);
-      handleClose();
-      navigate('/album_display');
+      const response = await request('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        // The token (when issued) is only used for event albums.
+        dispatch(login({ email, token: data.token, expiresAt: data.expiresAt }));
+        handleClose();
+        navigate('/album_display');
+      } else {
+        setError(data.message || 'Invalid email or password.');
+      }
     } catch (err) {
       setError(err.message || 'An error occurred during login.');
     }
@@ -64,31 +72,23 @@ const Login = ({ open, register, handleClose, onSwitchMode }) => {
 
   const handleRegister = async () => {
     try {
-      // Firebase reports the new user before its display name is set, so
-      // pass the completed profile on.
-      const user = await getAuthClient().register(name.trim(), email.trim(), password);
-      if (user) dispatch(authChanged(user));
-      handleClose();
-      navigate('/album_display');
+      const response = await request('/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.ok) {
+        // FIX: was dispatch(login(name)) — stored the name as the email and
+        // broke every email-keyed API call for newly registered users.
+        dispatch(login({ email, token: data.token, expiresAt: data.expiresAt }));
+        handleClose();
+        navigate('/album_display');
+      } else {
+        setError(data.message || 'Registration failed. Please try again.');
+      }
     } catch (err) {
       setError(err.message || 'An error occurred during registration.');
-    }
-  };
-
-  const handleReset = async () => {
-    if (!EMAIL_RE.test(email.trim())) {
-      setError('Enter your email address first, then choose “Forgot password?”.');
-      return;
-    }
-    setError('');
-    setSubmitting(true);
-    try {
-      await getAuthClient().resetPassword(email.trim());
-      setNotice(`If an account exists for ${email.trim()}, a password reset email is on its way.`);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -141,17 +141,12 @@ const Login = ({ open, register, handleClose, onSwitchMode }) => {
         <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', mb: 2 }}>
           {register
             ? 'An account keeps your photos, collections and saved slideshows together.'
-            : 'Log in to open your photo library. Had an account before October 2026? Choose “Create an account” with the same email to reconnect it.'}
+            : 'Log in to open your photo library.'}
         </Typography>
         <Stack spacing={2} sx={{ mt: 1 }}>
           {error && (
             <Alert severity="error" variant="outlined" onClose={() => setError('')}>
               {error}
-            </Alert>
-          )}
-          {notice && (
-            <Alert severity="success" variant="outlined" onClose={() => setNotice('')}>
-              {notice}
             </Alert>
           )}
           {register && (
@@ -198,23 +193,6 @@ const Login = ({ open, register, handleClose, onSwitchMode }) => {
           >
             {register ? 'Create account' : 'Log in'}
           </Button>
-          {!register && (
-            <Link
-              component="button"
-              type="button"
-              variant="body2"
-              onClick={handleReset}
-              disabled={submitting}
-              sx={{ alignSelf: 'center' }}
-            >
-              Forgot password?
-            </Link>
-          )}
-          {register && (
-            <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-              Used Albumio before? Create an account with the same email and confirm it from your inbox. Your photos reconnect automatically.
-            </Typography>
-          )}
           {onSwitchMode && (
             <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
               {register ? 'Already have an account? ' : 'New to Albumio? '}

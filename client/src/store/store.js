@@ -1,59 +1,82 @@
 import { configureStore, createSlice } from '@reduxjs/toolkit';
 
+const STORAGE_KEY = 'albumio.auth';
+
 /**
- * Mirrors the host's Firebase sign-in state for the UI. It never decides
- * authorization: the API verifies an ID token on every request.
+ * Rehydrate auth from localStorage so a page refresh doesn't drop the session
+ * (which would bounce the user out of protected routes).
  *
- * status: 'loading' until Firebase reports the initial state, then
- * 'signedIn' | 'signedOut'. libraryStatus comes from /api/me ('ready', or a
- * reason the personal library is waiting, e.g. 'email_verification_required').
+ * NOTE: `isLoggedIn` is a client flag and the personal library is keyed by
+ * email. The only server-verified credential is `hostToken`, which the API
+ * issues at login and checks on event-album requests.
  */
-const signedOut = {
-  status: 'signedOut',
-  isLoggedIn: false,
-  uid: '',
-  email: '',
-  name: '',
-  emailVerified: false,
-  libraryStatus: 'unknown',
-  features: { eventAlbums: false },
+const loadAuth = () => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.email === 'string') {
+      const tokenValid = typeof parsed.hostToken === 'string' && parsed.hostTokenExpiresAt > Date.now();
+      return {
+        email: parsed.email,
+        isLoggedIn: Boolean(parsed.isLoggedIn),
+        hostToken: tokenValid ? parsed.hostToken : '',
+        hostTokenExpiresAt: tokenValid ? parsed.hostTokenExpiresAt : 0,
+      };
+    }
+  } catch {
+    /* ignore malformed / unavailable storage */
+  }
+  return undefined;
 };
+
+const signedOut = { email: '', isLoggedIn: false, hostToken: '', hostTokenExpiresAt: 0 };
 
 const userSlice = createSlice({
   name: 'user',
-  initialState: { ...signedOut, status: 'loading' },
+  initialState: { ...signedOut, ...loadAuth(), features: { eventAlbums: false } },
   reducers: {
-    authChanged: (state, action) => {
-      const user = action.payload;
-      if (!user) return signedOut;
-      const switched = state.uid !== user.uid;
-      return {
-        ...state,
-        status: 'signedIn',
-        isLoggedIn: true,
-        uid: user.uid,
-        email: user.email,
-        name: user.name || (switched ? '' : state.name),
-        emailVerified: user.emailVerified,
-        ...(switched ? { libraryStatus: 'unknown', features: signedOut.features } : {}),
-      };
+    /** payload: an email, or { email, token, expiresAt } from /api/login. */
+    login: (state, action) => {
+      const { email, token = '', expiresAt = 0 } =
+        typeof action.payload === 'string' ? { email: action.payload } : action.payload;
+      state.email = email;
+      state.isLoggedIn = true;
+      state.hostToken = token;
+      state.hostTokenExpiresAt = expiresAt;
     },
-    profileLoaded: (state, action) => {
-      const { name, libraryStatus, features, emailVerified } = action.payload;
-      if (name) state.name = name;
-      if (typeof emailVerified === 'boolean') state.emailVerified = emailVerified;
-      state.libraryStatus = libraryStatus;
-      state.features = { ...signedOut.features, ...features };
+    logout: (state) => ({ ...state, ...signedOut }),
+    featuresLoaded: (state, action) => {
+      state.features = { eventAlbums: Boolean(action.payload?.eventAlbums) };
     },
   },
 });
 
-export const { authChanged, profileLoaded } = userSlice.actions;
+export const { login, logout, featuresLoaded } = userSlice.actions;
+
+/** True while the signed-in host holds an unexpired event-album token. */
+export const selectHostReady = (state) =>
+  state.user.isLoggedIn && Boolean(state.user.hostToken) && state.user.hostTokenExpiresAt > Date.now();
 
 const store = configureStore({
   reducer: {
     user: userSlice.reducer,
   },
+});
+
+// Persist auth changes so they survive reloads.
+store.subscribe(() => {
+  try {
+    const { user } = store.getState();
+    if (user.isLoggedIn) {
+      const { email, isLoggedIn, hostToken, hostTokenExpiresAt } = user;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ email, isLoggedIn, hostToken, hostTokenExpiresAt }));
+    } else {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  } catch {
+    /* storage unavailable (private mode / disabled) — non-fatal */
+  }
 });
 
 export default store;

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { request, readJson, errorMessage } from '../../api';
+import { API_BASE } from '../../api';
 
 /** Normalize a server/upload record into the shape the library uses. */
 export const toPhoto = ({ name, url, collection }) => ({
@@ -10,29 +10,34 @@ export const toPhoto = ({ name, url, collection }) => ({
   file: { name },
 });
 
+async function readJson(response) {
+  try {
+    return await response.json();
+  } catch {
+    return {};
+  }
+}
+
 /**
- * Loads the signed-in host's photos and exposes the mutations the library
+ * Loads the signed-in user's photos and exposes the mutations the library
  * performs. Every mutation resolves only after the API confirms success and
  * throws a user-facing Error otherwise, so callers can keep UI state intact.
- *
- * Requests carry the host's ID token; the server decides whose library it
- * is. `uid` only re-runs the load when a different host signs in.
  */
-export default function useLibraryImages(uid) {
+export default function useLibraryImages(email) {
   const [images, setImages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const requestId = useRef(0);
 
   const fetchImages = useCallback(async ({ quiet = false } = {}) => {
-    if (!uid) return;
+    if (!email) return;
     const id = ++requestId.current;
     if (!quiet) {
       setLoading(true);
       setError('');
     }
     try {
-      const response = await request('/api/my-images');
+      const response = await fetch(`${API_BASE}/api/my-images?email=${encodeURIComponent(email)}`);
       const files = await readJson(response);
       if (id !== requestId.current) return;
       if (response.ok && Array.isArray(files)) {
@@ -40,7 +45,7 @@ export default function useLibraryImages(uid) {
         setImages(files.map(toPhoto));
         setError('');
       } else if (!quiet) {
-        setError(errorMessage(files, 'We couldn’t load your photos. Please try again.'));
+        setError('We couldn’t load your photos. Please try again.');
       }
     } catch {
       if (id === requestId.current && !quiet) {
@@ -49,7 +54,7 @@ export default function useLibraryImages(uid) {
     } finally {
       if (id === requestId.current && !quiet) setLoading(false);
     }
-  }, [uid]);
+  }, [email]);
 
   useEffect(() => {
     fetchImages();
@@ -67,62 +72,62 @@ export default function useLibraryImages(uid) {
   const deleteImage = useCallback(async (name) => {
     let response;
     try {
-      response = await request('/api/delete-image', {
+      response = await fetch(`${API_BASE}/api/delete-image`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, email }),
       });
     } catch {
       throw new Error('Could not delete the photo. Please check your connection and try again.');
     }
     const result = await readJson(response);
     if (!response.ok || !result.success) {
-      throw new Error(errorMessage(result, 'Could not delete the photo. Please try again.'));
+      throw new Error(result.message || 'Could not delete the photo. Please try again.');
     }
     setImages((prev) => prev.filter((img) => img.name !== name));
-  }, []);
+  }, [email]);
 
   const renameImage = useCallback(async (oldName, newName) => {
     let response;
     try {
-      response = await request('/api/rename-image', {
+      response = await fetch(`${API_BASE}/api/rename-image`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ oldName, newName }),
+        body: JSON.stringify({ oldName, newName, email }),
       });
     } catch {
       throw new Error('Could not rename the photo. Please check your connection and try again.');
     }
     const result = await readJson(response);
     if (!response.ok || !result.success) {
-      throw new Error(errorMessage(result, 'Could not rename the photo. Please try again.'));
+      throw new Error(result.message || 'Could not rename the photo. Please try again.');
     }
     setImages((prev) =>
       prev.map((img) => (img.name === oldName ? { ...img, name: newName, file: { name: newName } } : img))
     );
     // The storage URL is path-based, so fetch the new one in the background.
     fetchImages({ quiet: true });
-  }, [fetchImages]);
+  }, [email, fetchImages]);
 
   const updateCollection = useCallback(async (imageName, newCollection) => {
     let response;
     try {
-      response = await request('/api/update-collection', {
+      response = await fetch(`${API_BASE}/api/update-collection`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ imageName, newCollection }),
+        body: JSON.stringify({ imageName, email, newCollection }),
       });
     } catch {
       throw new Error('Could not update the collection. Please check your connection and try again.');
     }
     const result = await readJson(response);
     if (!response.ok || !result.success) {
-      throw new Error(errorMessage(result, 'Could not update the collection. Please try again.'));
+      throw new Error(result.message || 'Could not update the collection. Please try again.');
     }
     setImages((prev) =>
       prev.map((img) => (img.name === imageName ? { ...img, collection: newCollection } : img))
     );
-  }, []);
+  }, [email]);
 
   return { images, loading, error, fetchImages, addImages, deleteImage, renameImage, updateCollection };
 }

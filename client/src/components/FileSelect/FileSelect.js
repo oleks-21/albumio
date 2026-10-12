@@ -1,5 +1,6 @@
 import { request, readJson, errorMessage } from '../../api';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSelector } from 'react-redux';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
@@ -39,10 +40,11 @@ const supportsFolders = typeof document !== 'undefined' && 'webkitdirectory' in 
 
 let nextId = 0;
 
-/** The personal library's upload endpoint (filename + collection). */
-async function uploadToLibrary(file, { collection }) {
+/** The personal library's upload endpoint (email + filename + collection). */
+async function uploadToLibrary(file, { email, collection }) {
   const formData = new FormData();
   formData.append('image', file);
+  formData.append('email', email);
   formData.append('fileName', file.name);
   formData.append('collection', collection);
   const response = await request('/api/upload-image', { method: 'POST', body: formData, timeout: 120000 });
@@ -72,6 +74,7 @@ export default function FileSelect({
   uploadFile, collectionMode = 'required', accept, children, blockedReason = '', variant = 'dialog',
   title = 'Add photos', doneLabel,
 }) {
+  const email = useSelector(state => state.user.email);
   const fullScreen = useMediaQuery(useTheme().breakpoints.down('sm'));
   const [items, setItems] = useState([]);
   const [collection, setCollection] = useState('');
@@ -124,7 +127,7 @@ export default function FileSelect({
     try {
       const record = uploadFile
         ? await uploadFile(item.file, { idempotencyKey: item.key })
-        : await uploadToLibrary(item.file, { collection: collectionName });
+        : await uploadToLibrary(item.file, { email, collection: collectionName });
       patch(item.id, { status: 'done' });
       onUploaded?.([record]);
     } catch (err) {

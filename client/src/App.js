@@ -1,16 +1,17 @@
 import './App.css';
-import { Suspense, lazy, useCallback, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import TopBar from './components/TopBar/TopBar';
 import MainPage from './components/MainPage/MainPage';
 import Login from './components/Login/Login';
 import { Routes, Route, Navigate } from "react-router-dom";
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import theme, { HEADER_HEIGHT } from './theme';
-import useAuthSync from './auth/useAuthSync';
+import { featuresLoaded } from './store/store';
+import { API_BASE } from './api';
 
 // Code-split the routes that aren't part of the first paint. MainPage (the
 // landing page) and TopBar stay eager; the logged-in Album subtree, event
@@ -23,12 +24,10 @@ const EventAlbum = lazy(() => import('./components/Events/EventAlbum'));
 const GuestJoin = lazy(() => import('./components/Events/GuestJoin'));
 const NotFound = lazy(() => import('./components/NotFound/NotFound'));
 
-// Defined at module scope so it isn't recreated on every App render. Waits
-// for Firebase to report the initial sign-in state before deciding.
+// Defined at module scope so it isn't recreated on every App render.
 function ProtectedRoute({ children }) {
-  const status = useSelector(state => state.user.status);
-  if (status === 'loading') return <RouteFallback />;
-  return status === 'signedIn' ? children : <Navigate to="/" replace />;
+  const isLoggedIn = useSelector(state => state.user.isLoggedIn);
+  return isLoggedIn ? children : <Navigate to="/" replace />;
 }
 
 function RouteFallback() {
@@ -40,7 +39,14 @@ function RouteFallback() {
 }
 
 export default function App() {
-  useAuthSync();
+  const dispatch = useDispatch();
+  // Ask the API whether event albums are switched on; off if it can't say.
+  useEffect(() => {
+    fetch(`${API_BASE}/api/features`)
+      .then((res) => (res.ok ? res.json() : {}))
+      .then((features) => dispatch(featuresLoaded(features)))
+      .catch(() => {});
+  }, [dispatch]);
   // One auth dialog shared by the header and the homepage hero.
   const [auth, setAuth] = useState({ open: false, register: false });
   const openAuth = useCallback((mode) => setAuth({ open: true, register: mode === 'register' }), []);
@@ -70,12 +76,12 @@ export default function App() {
                 path="/events"
                 element={
                   <ProtectedRoute>
-                    <EventAlbums />
+                    <EventAlbums onOpenAuth={openAuth} />
                   </ProtectedRoute>
                 }
               />
               {/* Hosts and guests share the album page; the server decides access. */}
-              <Route path="/events/:albumId" element={<EventAlbum />} />
+              <Route path="/events/:albumId" element={<EventAlbum onOpenAuth={openAuth} />} />
               <Route path="/join" element={<GuestJoin />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

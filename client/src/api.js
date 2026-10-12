@@ -1,11 +1,12 @@
-import { getAuthClient } from './auth/authClient';
+import store from './store/store';
 
 /**
  * Central API access layer.
  *
  * All backend calls go through here so the base URL lives in exactly one place
- * (configurable per environment) and every request shares timeout, bearer
- * authentication and error handling.
+ * (configurable per environment) and every request shares timeout and error
+ * handling. Personal-library calls identify the account by email, as they
+ * always have; only event-album calls send a bearer token.
  */
 export const API_BASE =
   process.env.REACT_APP_API_URL || 'https://albumio-backend.onrender.com';
@@ -41,28 +42,20 @@ async function send(path, { timeout, headers, ...options }, token) {
 }
 
 /**
- * fetch wrapper with a timeout and bearer authentication.
+ * fetch wrapper with a timeout and optional bearer authentication.
  *
  * `auth`:
- *   'host' (default) — the signed-in host's Firebase ID token, if any. A 401
- *                      is retried once with a freshly refreshed token.
- *   { guest: token }  — an event guest session token.
- *   'none'            — no Authorization header.
+ *   'none' (default) — no Authorization header (personal-library calls).
+ *   'host'           — the signed-in host's event-album token from /api/login.
+ *   { guest: token } — an event guest session token.
  *
  * Throws an Error with a useful message on network failure.
  */
-export async function request(path, { timeout = DEFAULT_TIMEOUT, auth = 'host', headers = {}, ...options } = {}) {
-  if (auth && auth.guest) return send(path, { timeout, headers, ...options }, auth.guest);
-  if (auth !== 'host') return send(path, { timeout, headers, ...options }, null);
-
-  const client = getAuthClient();
-  const token = await client.getIdToken(false).catch(() => null);
-  const res = await send(path, { timeout, headers, ...options }, token);
-  if (res.status === 401 && token) {
-    const fresh = await client.getIdToken(true).catch(() => null);
-    if (fresh) return send(path, { timeout, headers, ...options }, fresh);
-  }
-  return res;
+export async function request(path, { timeout = DEFAULT_TIMEOUT, auth = 'none', headers = {}, ...options } = {}) {
+  let token = null;
+  if (auth && auth.guest) token = auth.guest;
+  else if (auth === 'host') token = store.getState().user.hostToken || null;
+  return send(path, { timeout, headers, ...options }, token);
 }
 
 export async function readJson(response) {
